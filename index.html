@@ -72,6 +72,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
 .filters button{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:.82rem}
 .filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .addrow{display:flex;gap:8px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:12px}
+.addrow{align-items:flex-end}
+.addrow textarea{flex:1;min-width:0;min-height:44px;height:44px;resize:none;border:0;border-radius:10px;background:var(--surface-2);padding:10px 12px;line-height:1.5;overflow:hidden}
 .addrow input{flex:1;min-width:0;height:44px;border:0;border-radius:10px;background:var(--surface-2);padding:0 12px;outline-offset:0}
 .btn{height:44px;padding:0 16px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:.9rem;white-space:nowrap}
 .btn.ghost{background:var(--surface-2);color:var(--fg)}
@@ -89,7 +91,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
 .field{display:flex;flex-direction:column;gap:8px}
 .field>span{font-size:.92rem;font-weight:500}
 .hint{font-size:.8rem;color:var(--muted);margin:0}
-textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;resize:vertical;line-height:1.55}
+textarea{box-sizing:border-box;max-height:60vh;overflow-y:auto;width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;resize:vertical;line-height:1.55}
 .row-btns{display:flex;flex-wrap:wrap;gap:8px}
 /* overlays */
 .scrim{position:fixed;inset:0;z-index:20;background:transparent}
@@ -521,7 +523,7 @@ function vInter(){
 }
 function vPerson(){
   const pp=person(S.pid), a=activeOf(pp.id), hist=historyOf(pp.id);
-  let h=`<form class="addrow" id="person-add"><label class="sr" for="person-add-input">${esc(pp.name)}을(를) 위한 새 기도제목</label><input id="person-add-input" type="text" placeholder="${esc(pp.name)}을(를) 위한 새 기도제목" autocomplete="off" required><button class="btn">등록</button></form>
+  let h=`<form class="addrow" id="person-add"><label class="sr" for="person-add-input">${esc(pp.name)}을(를) 위한 새 기도제목</label><textarea id="person-add-input" data-grow rows="1" placeholder="${esc(pp.name)}을(를) 위한 새 기도제목" required></textarea><button class="btn">등록</button></form>
   <div class="seg" style="margin-bottom:12px"><button data-act="ptab" data-tab="active" aria-pressed="${S.ptab==='active'}">기도 중 ${a.length}</button><button data-act="ptab" data-tab="history" aria-pressed="${S.ptab==='history'}">기도의 역사 ${hist.length}</button></div>`;
   if(S.ptab==='active') h+=a.length?`<ul class="list">${a.map(p=>row(p)).join('')}</ul>`:`<div class="list"><p class="empty">기도 중인 제목이 없어요.</p></div>`;
   else h+=histList(hist);
@@ -728,7 +730,7 @@ function histSheet(id){
   const eds=(p.edits||[]).map((e,i)=>`<div class="catrow" data-ei="${i}"><input type="date" id="hs-ed-${i}" value="${toDate(e.at)}" aria-label="수정한 날짜" style="width:9.5em;flex:none"><span style="font-size:.85rem;overflow-wrap:anywhere;min-width:0">이전: ${esc(e.from)}</span><button type="button" class="btn danger" data-act="ed-del" aria-label="이 수정 기록 지우기">지우기</button></div>`).join('');
   const sls=(p.statusLog||[]).map((e,i)=>`<div class="catrow" data-si="${i}"><span style="font-size:.85rem;min-width:0">${chip(e.status)} → ${e.to?chip(e.to):'기도 중'}</span><input type="date" value="${toDate(e.changedAt)}" aria-label="바뀐 날짜" style="width:9.5em;flex:none"><button type="button" class="btn danger" data-act="ed-del" aria-label="이 응답 변경 기록 지우기">지우기</button></div>`).join('');
   sheet(`<h2>기도의 역사 편집</h2>
-  <div class="field"><label class="hint" for="hs-text">기도제목</label><textarea id="hs-text" required>${esc(p.text)}</textarea></div>
+  <div class="field"><label class="hint" for="hs-text">기도제목</label><textarea id="hs-text" data-grow required>${esc(p.text)}</textarea></div>
   <div class="field"><label class="hint" for="hs-created">등록일</label><input type="date" id="hs-created" value="${toDate(p.createdAt)}" required></div>
   <div class="field"><span class="hint">응답</span><div class="pick" role="radiogroup" aria-label="응답">${opts.map(([v,l])=>`<label><input type="radio" name="hs-st" id="hs-st-${v||'none'}" value="${v}" ${st===v?'checked':''}>${l}</label>`).join('')}</div>
   <label class="hint" for="hs-stat">응답일 (응답을 고른 경우)</label><input type="date" id="hs-stat" value="${toDate(p.statusAt||Date.now())}"></div>
@@ -748,7 +750,7 @@ function histSheet(id){
 }
 function editSheet(id){
   const p=P(id);
-  sheet(`<h2>기도제목 수정</h2><label class="sr" for="edit-text">기도제목</label><textarea id="edit-text" required>${esc(p.text)}</textarea>${p.personId?'':catPicker(p.cat)}
+  sheet(`<h2>기도제목 수정</h2><label class="sr" for="edit-text">기도제목</label><textarea id="edit-text" data-grow required>${esc(p.text)}</textarea>${p.personId?'':catPicker(p.cat)}
   <p class="hint" style="margin:0">'기록하고 수정'을 고르면 바뀌기 전 내용이 기도의 역사에 남아요.</p>
   <div class="row-btns"><button class="btn" value="log">기록하고 수정</button><button class="btn ghost" value="quiet">기록 없이 수정</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
     (f,sub)=>{const v=f.querySelector('textarea').value.trim();if(!v)return;
@@ -759,12 +761,12 @@ function editSheet(id){
       p.text=v;commit();toast(log?'수정하고 기록을 남겼어요':'기록 없이 수정했어요');});
 }
 function addSheet(){
-  sheet(`<h2>새 기도제목</h2><label class="sr" for="new-text">기도제목</label><textarea id="new-text" placeholder="어떤 기도제목인가요?" required></textarea>${catPicker(S.cat!=='all'&&S.cat!=='none'?S.cat:'')}<p class="hint" style="margin:0">오늘(${fmt(Date.now())}) 날짜로 등록돼요.</p><div class="row-btns"><button class="btn">등록</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+  sheet(`<h2>새 기도제목</h2><label class="sr" for="new-text">기도제목</label><textarea id="new-text" data-grow placeholder="어떤 기도제목인가요?" required></textarea>${catPicker(S.cat!=='all'&&S.cat!=='none'?S.cat:'')}<p class="hint" style="margin:0">오늘(${fmt(Date.now())}) 날짜로 등록돼요.</p><div class="row-btns"><button class="btn">등록</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
     f=>{const v=f.querySelector('textarea').value.trim();if(!v)return;const c=readCat(f);closeAll();db.prayers.push({id:uid(),text:v,createdAt:Date.now(),personId:null,cat:c,status:null,statusAt:null,deletedAt:null});commit();});
 }
 function newPersonSheet(prefill){
   sheet(`<h2>새 사람 추가</h2><label for="np-name" class="hint">이름</label><input id="np-name" type="text" value="${esc(prefill||'')}" placeholder="예: 어머니, 김민수" autocomplete="off" required>
-  <label for="np-first" class="hint">첫 기도제목 (선택)</label><input id="np-first" type="text" placeholder="비워 두어도 돼요" autocomplete="off"><div class="row-btns"><button class="btn">추가</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+  <label for="np-first" class="hint">첫 기도제목 (선택)</label><textarea id="np-first" data-grow rows="1" placeholder="비워 두어도 돼요" style="min-height:44px"></textarea><div class="row-btns"><button class="btn">추가</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
   f=>{const name=f.querySelector('#np-name').value.trim();if(!name)return;const id=uid();db.people.push({id,name,createdAt:Date.now(),deletedAt:null});
     const first=f.querySelector('#np-first').value.trim();if(first) db.prayers.push({id:uid(),text:first,createdAt:Date.now(),personId:id,status:null,statusAt:null,deletedAt:null});
     save();closeAll();go('person',id);});
@@ -936,6 +938,12 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
 document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','=','-','_','0'].includes(e.key))e.preventDefault();});
+function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight+2,innerHeight*0.6)+'px';}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea[data-grow]'))grow(e.target);});
+new MutationObserver(()=>document.querySelectorAll('textarea[data-grow]').forEach(t=>{if(!t.dataset.g){t.dataset.g=1;grow(t);}})).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('keydown',e=>{
+  if(e.target.id==='person-add-input'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();e.target.form.requestSubmit();}
+});
 load();applyPrefs();parseHash();render();cloudInit();
 })();
 </script>
