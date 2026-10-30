@@ -1,0 +1,854 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="기도제목"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style></head><body>
+<title>기도제목 노트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one centered column (max 640px), sticky header, bottom tab bar, floating + button; rows slide left to reveal ··· */
+:root{
+  --bg:#F4F5F8; --surface:#FFFFFF; --surface-2:#ECEFF4; --line:#E3E6EC;
+  --fg:#1A2030; --muted:#566074; --accent:#2F4A8A; --on-accent:#FFFFFF;
+  --o:#1F6B4F; --x:#A33A2A; --wait:#8A5A00; --his:#4B3D8F; --on-status:#FFFFFF;
+  --danger:#A33A2A; --shadow:0 10px 30px rgba(20,30,50,.18); --scrim:rgba(16,21,31,.38);
+  --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0E0E; --surface:#1B1B1B; --surface-2:#2A2A2A; --line:#333333;
+  --fg:#EDEDED; --muted:#A3A3A3; --accent:#C9CCD3; --on-accent:#111111;
+  --o:#5DB48C; --x:#E58572; --wait:#DDAA4B; --his:#AA9BEA; --on-status:#111111;
+  --danger:#E58572; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E0E0E; --surface:#1B1B1B; --surface-2:#2A2A2A; --line:#333333;
+  --fg:#EDEDED; --muted:#A3A3A3; --accent:#C9CCD3; --on-accent:#111111;
+  --o:#5DB48C; --x:#E58572; --wait:#DDAA4B; --his:#AA9BEA; --on-status:#111111;
+  --danger:#E58572; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font-size:16px;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
+body{touch-action:pan-x pan-y}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:1rem;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 calc(96px + env(safe-area-inset-bottom,0px));-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+input,textarea,select{font-size:max(16px,1rem)!important}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:640px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:6px;padding-block:14px 10px}
+header.top h1{margin:0;font-size:1.5rem;font-weight:700;flex:1;min-width:0;text-wrap:balance;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{width:44px;height:44px;border:0;border-radius:22px;background:transparent;display:grid;place-items:center;color:var(--fg);flex:none}
+.ib:hover{background:var(--surface-2)}
+.link{border:0;background:transparent;color:var(--accent);font-size:.85rem;font-weight:500;padding:12px 4px;white-space:nowrap}
+.list{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:14px;overflow:hidden}
+.sw{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.sw:last-child{border-bottom:0}
+.sw-act{position:absolute;right:0;top:0;bottom:0;width:72px;border:0;background:var(--accent);color:var(--on-accent);font-size:1.4rem;font-weight:700;letter-spacing:1px}
+.sw-body{position:relative;background:var(--surface);padding:14px 16px;transition:transform .22s ease;touch-action:pan-y;user-select:none;-webkit-user-select:none;display:flex;flex-direction:column;gap:3px;cursor:grab}
+.sw.open .sw-body{transform:translateX(-72px)}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.who{font-weight:700;color:var(--accent)}
+.txt{margin:0;font-size:1rem;font-weight:500;line-height:1.55;overflow-wrap:anywhere}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;font-size:.7rem;font-weight:700;color:var(--on-status)}
+.s-O{background:var(--o)}.s-X{background:var(--x)}.s-WAIT{background:var(--wait)}.s-HIS{background:var(--his)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.box{background:var(--surface);border-radius:14px;overflow:hidden}
+.box .list{border-radius:0}
+.box .sw{border-bottom:0;border-top:1px solid var(--line)}
+.nm{display:inline-flex;align-items:center;gap:2px;min-height:36px;padding:6px 16px 4px;border:0;background:transparent;font-size:.78rem;font-weight:700;color:var(--accent)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+.box .empty{padding:6px 16px 16px;text-align:left}
+.banner{background:var(--surface-2);border-radius:12px;padding:10px 12px 10px 14px;display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);margin-bottom:12px}
+.banner span{flex:1}
+.fab{position:fixed;z-index:6;right:max(calc(20px + env(safe-area-inset-right,0px)),calc((100vw - 640px)/2 + 4px));bottom:calc(88px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:28px;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:var(--shadow)}
+nav.tabs{position:fixed;z-index:6;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;gap:8px;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+nav.tabs button{flex:0 1 160px;height:48px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
+.seg{display:flex;background:var(--surface-2);border-radius:10px;padding:4px;gap:4px}
+.seg button,.seg label{flex:1;min-height:36px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:.85rem;display:flex;align-items:center;justify-content:center;cursor:pointer;text-align:center;padding:0 6px}
+.seg button[aria-pressed="true"],.seg label:has(input:checked){background:var(--surface);color:var(--fg);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filters button{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:.82rem}
+.filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.addrow{display:flex;gap:8px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:12px}
+.addrow input{flex:1;min-width:0;height:44px;border:0;border-radius:10px;background:var(--surface-2);padding:0 12px;outline-offset:0}
+.btn{height:44px;padding:0 16px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:.9rem;white-space:nowrap}
+.btn.ghost{background:var(--surface-2);color:var(--fg)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.btn.armed{background:var(--danger);color:var(--on-status);border-color:var(--danger)}
+.tl{list-style:none;margin:0;padding:18px 16px 4px;background:var(--surface);border-radius:14px}
+.tl li{display:grid;grid-template-columns:16px 1fr;column-gap:12px;position:relative;padding-bottom:16px}
+.tl li::before{content:"";position:absolute;left:7px;top:18px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.dot{width:12px;height:12px;border-radius:6px;margin-top:5px;position:relative;z-index:1}
+.dot.open{border:2px solid var(--accent);background:var(--surface)}
+.tl .txt{font-weight:400}
+.group{background:var(--surface);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;margin-bottom:12px}
+.group h2{margin:0;font-size:.78rem;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.field{display:flex;flex-direction:column;gap:8px}
+.field>span{font-size:.92rem;font-weight:500}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;resize:vertical;line-height:1.55}
+.row-btns{display:flex;flex-wrap:wrap;gap:8px}
+/* overlays */
+.scrim{position:fixed;inset:0;z-index:20;background:transparent}
+.scrim.dim{background:var(--scrim)}
+.menu{position:fixed;z-index:21;width:240px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px 0;display:flex;flex-direction:column}
+.menu button.mi{height:44px;border:0;background:transparent;text-align:left;padding:0 16px;font-size:.95rem;color:var(--fg)}
+.menu button.mi:hover{background:var(--surface-2)}
+.menu .mi.danger{color:var(--danger);border-top:1px solid var(--line)}
+.menu .lbl{font-size:.75rem;color:var(--muted);padding:8px 16px 6px}
+.answers{display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:4px;padding:0 12px 10px}
+.answers button{height:34px;border:0;border-radius:8px;font-size:.78rem;font-weight:700;color:var(--on-status)}
+.answers button[aria-pressed="true"]{outline:2px solid var(--fg);outline-offset:1px}
+.sheet{position:fixed;z-index:21;left:0;right:0;bottom:0;margin:0 auto;max-width:640px;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:var(--shadow);padding:10px max(20px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:85vh;overflow:auto}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);align-self:center}
+.sheet h2{margin:0;font-size:1.1rem}
+.sheet input[type=text],.sheet input[type=search]{width:100%;height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px}
+.people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.people button{width:100%;min-height:48px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;padding:0 4px;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.people small{color:var(--muted)}
+.drawer{position:fixed;z-index:21;top:0;bottom:0;left:0;width:min(300px,86vw);background:var(--surface);box-shadow:var(--shadow);padding:calc(20px + env(safe-area-inset-top,0px)) 12px calc(20px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:4px}
+.drawer h2{margin:4px 12px 14px;font-size:1.15rem}
+.drawer button{height:48px;border:0;border-radius:10px;background:transparent;text-align:left;padding:0 12px;font-size:.98rem;display:flex;justify-content:space-between;align-items:center}
+.drawer button[aria-current="page"]{background:var(--surface-2);font-weight:700}
+.drawer small{color:var(--muted);font-variant-numeric:tabular-nums}
+.drawer hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
+.toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(152px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);border-radius:12px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:8px;font-size:.88rem;max-width:calc(100vw - 32px);box-shadow:var(--shadow)}
+.toast button{white-space:nowrap;flex:none;border:0;background:transparent;color:inherit;font-weight:700;height:36px;padding:0 10px;text-decoration:underline}
+.bh{display:flex;align-items:center;justify-content:space-between;padding-right:6px}
+.pin{width:40px;height:40px;border:0;border-radius:20px;background:transparent;color:var(--muted);display:grid;place-items:center}
+.pin[aria-pressed="true"]{color:var(--accent)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.seg.sm button{min-height:32px;font-size:.78rem}
+.ed{margin:4px 0 0;font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
+.ed s{text-decoration-color:var(--muted)}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;border:1px solid var(--line);font-size:.7rem;color:var(--muted)}
+.s-DEL{background:var(--muted)}
+.dot.del{background:var(--muted)}
+.sortbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.sortbar button{height:30px;padding:0 10px 0 12px;border-radius:15px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.75rem;display:inline-flex;align-items:center;gap:4px}
+.sortbar button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:700}
+.catbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.catbar button{flex:none;height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:.8rem;white-space:nowrap}
+.catbar button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:700}
+.catbar .grp{border-style:dashed}
+.cathead{font-size:.78rem;font-weight:700;color:var(--muted);margin:16px 4px 8px;display:flex;justify-content:space-between}
+.cathead:first-child{margin-top:0}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick label{height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);display:inline-flex;align-items:center;font-size:.85rem;cursor:pointer;position:relative}
+.pick label:has(input:checked){background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.pick input{position:absolute;opacity:0;pointer-events:none}
+.pick label:has(input:focus-visible){outline:2px solid var(--accent)}
+.catrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.catrow span{flex:1}
+.catrow .btn{height:36px;font-size:.8rem;padding:0 12px}
+.tl li[data-act]{cursor:pointer;border-radius:8px}
+.tl li[data-act]:hover .txt{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
+.sheet input[type=date]{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 10px;width:100%}
+.sync{font-size:.75rem;color:var(--muted);padding:4px 12px;display:flex;align-items:center;gap:6px}
+.sync i{width:8px;height:8px;border-radius:4px;background:var(--muted);display:inline-block}
+.sync i.on{background:var(--o)}.sync i.err{background:var(--x)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion: reduce){.sw-body{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top" id="top"></header>
+  <main id="view" aria-live="polite"></main>
+</div>
+<button class="fab" id="fab" data-act="fab" aria-label="추가"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<nav class="tabs" id="tabs" aria-label="섹션">
+  <button data-go="personal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>개인</button>
+  <button data-go="intercession"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 19c.8-3.4 3.3-5 6-5s5.2 1.6 6 5M15 14.3c2.4-.3 4.6 1 5.4 4"/></svg>중보</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const KEY='prayer-notes-v1', DAY=864e5, W=72;
+const LABEL={O:'O',X:'X',WAIT:'Wait',HIS:'His Way'};
+const ANSWERED=new Set(['O','X','HIS']);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-5);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=t=>{const d=new Date(t);return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())};
+const fmtS=t=>{const d=new Date(t);return pad(d.getMonth()+1)+'.'+pad(d.getDate())};
+const days=(a,b)=>Math.max(0,Math.round((b-a)/DAY));
+const isAns=p=>ANSWERED.has(p.status);
+
+let db=null;
+function seed(){
+  const n=Date.now(), ago=d=>n-d*DAY;
+  const mom=uid(),ms=uid(),je=uid();
+  const P=(text,c,extra)=>Object.assign({id:uid(),text,createdAt:ago(c),personId:null,status:null,statusAt:null,deletedAt:null,ex:true},extra||{});
+  return {
+    prayers:[
+      P('졸업 후 진로를 지혜롭게 결정할 수 있도록',18,{status:'WAIT',statusAt:ago(4),cat:'진로'}),
+      P('매일 아침 말씀 묵상 습관이 자리 잡기를',27,{cat:'신앙'}),
+      P('새 학기 좋은 공동체를 만나도록',39,{cat:'관계'}),
+      P('마음의 조급함을 내려놓을 수 있도록',61,{cat:'신앙'}),
+      P('가족 모두의 건강을 지켜주시길',75,{status:'O',statusAt:ago(30),cat:'가정'}),
+      P('무릎 수술 후 회복이 빠르도록',5,{personId:mom}),
+      P('교회 봉사 가운데 기쁨이 회복되기를',28,{personId:mom,status:'WAIT',statusAt:ago(10)}),
+      P('건강검진 결과가 좋도록',76,{personId:mom,status:'O',statusAt:ago(58)}),
+      P('이사할 집이 빨리 구해지도록',149,{personId:mom,status:'HIS',statusAt:ago(111)}),
+      P('이직 준비 가운데 길을 열어주시길',10,{personId:ms}),
+      P('아내의 출산을 지켜주시길',32,{personId:ms}),
+      P('유학 비자 절차가 순조롭도록',16,{personId:je}),
+      P('새로운 환경에서 신앙을 지키도록',16,{personId:je,status:'X',statusAt:ago(3)})
+    ],
+    people:[
+      {id:mom,name:'어머니',createdAt:ago(150),deletedAt:null,ex:true},
+      {id:ms,name:'김민수',createdAt:ago(40),deletedAt:null,ex:true},
+      {id:je,name:'이지은',createdAt:ago(20),deletedAt:null,ex:true}
+    ],
+    settings:{}
+  };
+}
+function load(){
+  try{const s=localStorage.getItem(KEY); if(s) db=JSON.parse(s);}catch(e){}
+  if(!db||!Array.isArray(db.prayers)||!Array.isArray(db.people)) db=seed();
+  db.settings=Object.assign({theme:'system',font:'m',sort:'new',trashDays:30,peopleSort:'date',peopleDir:'desc',groupByCat:false},db.settings||{});
+  const ps=db.settings.peopleSort;
+  if(ps==='new'){db.settings.peopleSort='date';db.settings.peopleDir='desc';}
+  else if(ps==='old'){db.settings.peopleSort='date';db.settings.peopleDir='asc';}
+  else if(ps==='abc'&&!db.settings.peopleDirSet){db.settings.peopleDir='asc';}
+  db.settings.peopleDirSet=true;
+  if(!Array.isArray(db.cats)) db.cats=['신앙','가정','진로','건강','관계'];
+  purge();
+}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+function save(){saveLocal();if(CLOUD.on){clearTimeout(CLOUD.t);CLOUD.t=setTimeout(flush,400);}}
+/* ---------- sync through Supabase (each person's rows are private by row-level security) ---------- */
+const SUPA_URL='https://qrrpmybkapnppohadqkh.supabase.co', SUPA_KEY='sb_publishable_nsZWMcYt-MkEmjcHe9pbWg_Udl9TIwv';   // filled in at deploy time; the anon key is public by design
+const DEV=(()=>{try{let d=localStorage.getItem('prayer-dev');if(!d){d=uid();localStorage.setItem('prayer-dev',d);}return d;}catch(e){return uid();}})();
+const CLOUD={on:false,state:'local',maps:{prayer:new Map(),person:new Map()},sm:'',busy:false,dirty:false,t:null,last:null,email:'',msg:''};
+const KEYS={prayer:'prayers',person:'people'};
+const LOCAL_ONLY=['theme','font','supaUrl','supaKey'];
+const sortKeys=o=>Array.isArray(o)?o.map(sortKeys):o&&typeof o==='object'?Object.keys(o).sort().reduce((a,k)=>(a[k]=sortKeys(o[k]),a),{}):o;
+const J=o=>JSON.stringify(sortKeys(o));
+const strip=b=>{const o=Object.assign({},b);delete o._by;return o;};
+const syncMeta=()=>{const st={};for(const k in db.settings)if(!LOCAL_ONLY.includes(k))st[k]=db.settings[k];return J({cats:db.cats,settings:st});};
+const supaCfg=()=>({url:SUPA_URL||db.settings.supaUrl||'',key:SUPA_KEY||db.settings.supaKey||''});
+function applyMeta(md){
+  if(Array.isArray(md.cats))db.cats=md.cats.slice();
+  const st=Object.assign({},md.settings||{});LOCAL_ONLY.forEach(k=>delete st[k]);Object.assign(db.settings,st);
+}
+async function cloudInit(){
+  const c=supaCfg();
+  if(!c.url||!c.key){CLOUD.state='local';render();return;}
+  if(!window.supabase){CLOUD.state='err';CLOUD.msg='동기화 모듈을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';render();return;}
+  try{CLOUD.sb=supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'prayer-notes-auth'}});}
+  catch(e){CLOUD.state='err';CLOUD.msg='서버 주소나 키가 올바르지 않아요.';render();return;}
+  CLOUD.sb.auth.onAuthStateChange((ev,sess)=>{
+    if(sess&&!CLOUD.on&&!CLOUD.starting) setTimeout(()=>supaStart(sess),0);
+    if(ev==='SIGNED_OUT'){stopCloud();CLOUD.state='signedout';render();}
+  });
+  const {data}=await CLOUD.sb.auth.getSession();
+  if(!data.session&&!CLOUD.on){CLOUD.state='signedout';render();}
+}
+async function fetchAll(){
+  let rows=[],from=0;
+  for(;;){const {data,error}=await CLOUD.sb.from('prayer_items').select('kind,id,body').range(from,from+999);if(error)throw error;rows=rows.concat(data);if(data.length<1000)break;from+=1000;}
+  return rows;
+}
+async function supaStart(sess){
+  CLOUD.starting=true;
+  try{
+    const sb=CLOUD.sb,uid0=sess.user.id;CLOUD.uid=uid0;CLOUD.email=sess.user.email||'';
+    const rows=await fetchAll();
+    const rp=rows.filter(r=>r.kind==='prayer').map(r=>strip(r.body)),ru=rows.filter(r=>r.kind==='person').map(r=>strip(r.body)),m=rows.find(r=>r.kind==='meta');
+    CLOUD.be={
+      put:async(kind,list)=>{for(let i=0;i<list.length;i+=400){const {error}=await sb.from('prayer_items').upsert(list.slice(i,i+400).map(b=>({user_id:uid0,kind,id:b.id,body:b})),{onConflict:'user_id,kind,id'});if(error)throw error;}},
+      del:async(kind,ids)=>{const {error}=await sb.from('prayer_items').delete().eq('kind',kind).in('id',ids);if(error)throw error;},
+      watch:()=>{CLOUD.ch=sb.channel('prayer-'+uid0).on('postgres_changes',{event:'*',schema:'public',table:'prayer_items',filter:'user_id=eq.'+uid0},pl=>{
+        if(pl.eventType==='DELETE'){const o=pl.old||{};remoteDel(o.kind,o.id);}else{const n=pl.new||{};if(n.body&&n.body._by!==DEV)remoteSet(n.kind,n.id,strip(n.body));}
+      }).subscribe();}
+    };
+    const M=CLOUD.maps;M.prayer.clear();M.person.clear();CLOUD.sm='';
+    if(m){
+      const hp=new Set(rp.map(p=>p.id)),hu=new Set(ru.map(p=>p.id));
+      const lp=db.prayers.filter(p=>!p.ex&&!hp.has(p.id)),lu=db.people.filter(p=>!p.ex&&!hu.has(p.id));
+      rp.forEach(p=>M.prayer.set(p.id,J(p)));ru.forEach(p=>M.person.set(p.id,J(p)));
+      db.prayers=rp.concat(lp);db.people=ru.concat(lu);
+      const md=strip(m.body);applyMeta(md);CLOUD.sm=syncMeta();
+    }else{
+      db.prayers=db.prayers.filter(p=>!p.ex);const ex=new Set(db.people.filter(p=>p.ex).map(p=>p.id));
+      db.people=db.people.filter(p=>!p.ex);db.prayers=db.prayers.filter(p=>!ex.has(p.personId));
+    }
+    CLOUD.on=true;CLOUD.state='on';CLOUD.msg='';saveLocal();applyPrefs();render();
+    await flush();CLOUD.be.watch();
+  }catch(e){CLOUD.state='err';CLOUD.msg=String(e&&e.message||'').includes('prayer_items')?'서버에 표가 아직 없어요. 설정 SQL을 실행해 주세요.':'';render();}
+  finally{CLOUD.starting=false;}
+}
+function stopCloud(){
+  CLOUD.on=false;if(CLOUD.ch&&CLOUD.sb){CLOUD.sb.removeChannel(CLOUD.ch);CLOUD.ch=null;}
+  CLOUD.maps.prayer.clear();CLOUD.maps.person.clear();CLOUD.sm='';
+}
+function remoteSet(kind,id,body){
+  if(kind==='meta'){const before=CLOUD.sm;const md=Object.assign({},body);delete md.id;delete md.updatedAt;applyMeta(md);const now=syncMeta();if(now!==before){CLOUD.sm=now;saveLocal();render();}return;}
+  const map=CLOUD.maps[kind];if(!map)return;const j=J(body);if(map.get(id)===j)return;
+  map.set(id,j);const key=KEYS[kind],i=db[key].findIndex(x=>x.id===id);if(i>=0)db[key][i]=body;else db[key].push(body);
+  saveLocal();CLOUD.last=Date.now();render();
+}
+function remoteDel(kind,id){
+  const map=CLOUD.maps[kind];if(!map||!map.has(id))return;
+  map.delete(id);db[KEYS[kind]]=db[KEYS[kind]].filter(x=>x.id!==id);saveLocal();CLOUD.last=Date.now();render();
+}
+async function resync(){
+  if(!CLOUD.on||CLOUD.busy)return;
+  try{
+    const rows=await fetchAll(),seen={prayer:new Set(),person:new Set()};
+    for(const r of rows){if(seen[r.kind])seen[r.kind].add(r.id);if(r.body&&r.body._by!==DEV)remoteSet(r.kind,r.id,strip(r.body));}
+    for(const k of ['prayer','person'])for(const id of [...CLOUD.maps[k].keys()])if(!seen[k].has(id))remoteDel(k,id);
+    await flush();
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resync();});
+window.addEventListener('online',resync);
+async function flush(){
+  if(!CLOUD.on)return;if(CLOUD.busy){CLOUD.dirty=true;return;}
+  CLOUD.busy=true;
+  try{
+    do{
+      CLOUD.dirty=false;
+      for(const kind of ['prayer','person']){
+        const map=CLOUD.maps[kind],cur=new Map(db[KEYS[kind]].map(x=>[x.id,J(x)]));
+        const ch=[...cur].filter(([id,j])=>map.get(id)!==j);
+        if(ch.length){await CLOUD.be.put(kind,ch.map(([id,j])=>Object.assign(JSON.parse(j),{_by:DEV})));ch.forEach(([id,j])=>map.set(id,j));}
+        const gone=[...map.keys()].filter(id=>!cur.has(id));
+        if(gone.length){await CLOUD.be.del(kind,gone);gone.forEach(id=>map.delete(id));}
+      }
+      const mj=syncMeta();
+      if(mj!==CLOUD.sm){await CLOUD.be.put('meta',[Object.assign(JSON.parse(mj),{id:'main',_by:DEV,updatedAt:Date.now()})]);CLOUD.sm=mj;}
+    }while(CLOUD.dirty);
+    CLOUD.state='on';CLOUD.last=Date.now();
+  }catch(e){CLOUD.state='err';CLOUD.dirty=false;setTimeout(()=>{if(CLOUD.on)flush();},5000);}
+  finally{CLOUD.busy=false;}
+}
+function syncLine(short){
+  if(CLOUD.state==='on')return `<div class="sync"><i class="on"></i>${short?'동기화 중':`${esc(CLOUD.email)} 계정으로 동기화 중${CLOUD.last?' · '+new Date(CLOUD.last).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):''}`}</div>`;
+  if(CLOUD.state==='err')return `<div class="sync"><i class="err"></i>${short?'동기화 멈춤':(CLOUD.msg||'동기화가 잠시 멈췄어요. 이 기기에는 저장돼요.')}</div>`;
+  if(CLOUD.state==='signedout')return `<div class="sync"><i></i>${short?'로그인 안 됨':'로그인하면 웹과 Mac이 같은 기도제목을 써요. 지금은 이 기기에만 저장돼요.'}</div>`;
+  return `<div class="sync"><i></i>이 기기에만 저장 중</div>`;
+}
+function syncSection(){
+  const c=supaCfg();
+  let h=`<section class="group"><h2>동기화</h2>${syncLine().replace('class="sync"','class="sync" style="padding:0"')}`;
+  if(CLOUD.state==='on') h+=`<div><button class="btn ghost" data-act="sign-out">로그아웃</button></div>`;
+  else if(c.url&&c.key) h+=`<form id="auth-form" class="field" style="gap:10px">
+      <label class="hint" for="auth-email">이메일</label><input id="auth-email" type="email" autocomplete="email" required style="height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
+      <label class="hint" for="auth-pw">비밀번호 (6자 이상)</label><input id="auth-pw" type="password" autocomplete="current-password" minlength="6" required style="height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
+      <div class="row-btns"><button class="btn" value="in">로그인</button><button class="btn ghost" value="up">처음이에요 · 가입</button></div></form>`;
+  h+=`<p class="hint">화면 모드와 글자 크기는 기기마다 따로 정해요.</p>`;
+  if(!SUPA_URL) h+=`<details><summary class="hint" style="cursor:pointer">서버 연결 정보</summary><div class="field" style="margin-top:8px">
+      <label class="hint" for="supa-url">Supabase 주소</label><input id="supa-url" type="url" value="${esc(db.settings.supaUrl||'')}" placeholder="https://xxxx.supabase.co" style="height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
+      <label class="hint" for="supa-key">anon 키</label><input id="supa-key" type="text" value="${esc(db.settings.supaKey||'')}" style="height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
+      <div><button class="btn ghost" data-act="supa-save">저장하고 연결</button></div></div></details>`;
+  return h+`</section>`;
+}
+function purge(){
+  const lim=Date.now()-db.settings.trashDays*DAY;
+  const goneP=new Set(db.people.filter(p=>p.deletedAt&&p.deletedAt<lim).map(p=>p.id));
+  db.people=db.people.filter(p=>!goneP.has(p.id));
+  db.prayers=db.prayers.filter(p=>!goneP.has(p.personId)&&!(p.deletedAt&&p.deletedAt<lim&&!p.delLogged));
+  db.prayers.forEach(p=>{if(p.deletedAt&&p.deletedAt<lim&&p.delLogged)p.gone=true;});
+  save();
+}
+
+/* ---------- selectors ---------- */
+const person=id=>db.people.find(p=>p.id===id);
+const alivePeople=()=>{const k=db.settings.peopleSort, up=db.settings.peopleDir==='asc'?1:-1;
+  const cmp=k==='abc'?(a,b)=>up*a.name.localeCompare(b.name,'ko'):(a,b)=>up*(a.createdAt-b.createdAt);
+  return db.people.filter(p=>!p.deletedAt).sort((a,b)=>((b.pinnedAt?1:0)-(a.pinnedAt?1:0))||(a.pinnedAt&&b.pinnedAt?a.pinnedAt-b.pinnedAt:cmp(a,b)));};
+const sorted=arr=>arr.sort((a,b)=>db.settings.sort==='old'?a.createdAt-b.createdAt:b.createdAt-a.createdAt);
+const personalActive=()=>sorted(db.prayers.filter(p=>!p.personId&&!p.deletedAt&&!isAns(p)));
+const activeOf=id=>sorted(db.prayers.filter(p=>p.personId===id&&!p.deletedAt&&!isAns(p)));
+const inHist=p=>!p.deletedAt||p.delLogged;
+const historyOf=id=>db.prayers.filter(p=>p.personId===id&&inHist(p)).sort((a,b)=>b.createdAt-a.createdAt);
+const visible=p=>!p.deletedAt&&(!p.personId||(person(p.personId)&&!person(p.personId).deletedAt));
+const archive=()=>db.prayers.filter(p=>isAns(p)&&visible(p)).sort((a,b)=>b.statusAt-a.statusAt);
+const trashed=()=>{
+  const ppl=db.people.filter(p=>p.deletedAt).map(p=>({kind:'person',id:p.id,at:p.deletedAt,p}));
+  const pr=db.prayers.filter(p=>p.deletedAt&&!p.gone&&!(p.personId&&person(p.personId)&&person(p.personId).deletedAt)).map(p=>({kind:'prayer',id:p.id,at:p.deletedAt,p}));
+  return ppl.concat(pr).sort((a,b)=>b.at-a.at);
+};
+const hasExamples=()=>db.prayers.some(p=>p.ex)||db.people.some(p=>p.ex);
+
+/* ---------- state & routing ---------- */
+const S={hcat:'all',view:'personal',pid:null,ptab:'active',mtab:'active',filter:'all',arch:'personal',cat:'all'};
+function parseHash(){
+  const h=(location.hash||'').slice(1);
+  if(h.startsWith('person-')&&person(h.slice(7))&&!person(h.slice(7)).deletedAt){S.view='person';S.pid=h.slice(7);}
+  else if(['personal','intercession','archive','history','trash','prefs'].includes(h)) S.view=h;
+  else S.view='personal';
+}
+function go(v,pid){
+  const h=v==='person'?'person-'+pid:v;
+  if(v==='person'){S.ptab='active';}
+  if(location.hash.slice(1)===h){parseHash();render();}
+  else location.hash=h;
+}
+window.addEventListener('hashchange',()=>{parseHash();closeAll();render();window.scrollTo(0,0);});
+
+/* ---------- theme & font ---------- */
+const root=document.documentElement, hostTheme=root.getAttribute('data-theme');
+function applyPrefs(){
+  const t=db.settings.theme;
+  if(t==='system'){hostTheme?root.setAttribute('data-theme',hostTheme):root.removeAttribute('data-theme');}
+  else root.setAttribute('data-theme',t);
+  root.style.fontSize={xs:'13px',s:'14px',m:'16px',l:'18px',xl:'20px'}[db.settings.font]||'16px';
+}
+
+/* ---------- templates ---------- */
+const ICON={
+  menu:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  back:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+  dots:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
+};
+const pinIcon=on=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></svg>`;
+const chip=s=>s?`<span class="chip s-${s}">${LABEL[s]}</span>`:'';
+function row(p,o){
+  o=o||{};
+  const pp=p.personId&&person(p.personId);
+  let meta=`<span>${fmt(p.createdAt)}</span>`;
+  if(o.who&&pp) meta+=`<span class="who">${esc(pp.name)}</span>`;
+  if(p.cat&&!o.noCat) meta+=`<span class="tag">${esc(p.cat)}</span>`;
+  if(p.edits&&p.edits.length) meta+=`<span>수정됨</span>`;
+  if(p.status) meta+=chip(p.status)+(isAns(p)?`<span>${fmtS(p.statusAt)} 응답</span>`:'');
+  return `<li class="sw" data-id="${p.id}"><button class="sw-act" data-act="more" aria-label="더보기 메뉴" tabindex="-1">···</button>
+  <div class="sw-body" tabindex="0" aria-label="${esc(p.text)}. 옆으로 밀거나 Enter로 메뉴 열기">${o.bare?'':`<div class="meta">${meta}</div>`}<p class="txt">${esc(p.text)}</p></div></li>`;
+}
+function header(){
+  const titles={personal:'개인 기도',intercession:'중보기도',archive:'응답 보관함',history:'개인 기도의 역사',trash:'휴지통',prefs:'설정'};
+  if(S.view==='person'){
+    const p=person(S.pid);
+    return `<button class="ib" data-act="back" aria-label="중보기도로 돌아가기">${ICON.back}</button><h1>${esc(p.name)}</h1><button class="ib" data-act="person-more" aria-label="${esc(p.name)} 메뉴">${ICON.dots}</button>`;
+  }
+  let right='';
+  if(S.view==='personal') right=`<button class="link" data-act="to-archive" data-a="personal">응답 보관함 ${archive().filter(p=>!p.personId).length}</button>`;
+  if(S.view==='intercession') right=`<button class="link" data-act="to-archive" data-a="inter">응답 보관함 ${archive().filter(p=>p.personId).length}</button>`;
+  return `<button class="ib" data-act="drawer" aria-label="전체 메뉴">${ICON.menu}</button><h1>${titles[S.view]}</h1>${right}`;
+}
+function histList(items){
+  if(!items.length) return `<div class="list"><p class="empty">아직 기록이 없어요.</p></div>`;
+  return `<ol class="tl">${items.map(p=>{
+    let m=`${fmt(p.createdAt)} 등록`;
+    if(isAns(p)) m+=` → ${fmt(p.statusAt)} ${chip(p.status)} <span>${days(p.createdAt,p.statusAt)}일 만에</span>`;
+    else if(p.status==='WAIT') m+=` · ${chip('WAIT')} <span>${fmtS(p.statusAt)} 체크</span>`;
+    else if(!p.deletedAt) m+=` · 기도 중 ${days(p.createdAt,Date.now())+1}일째`;
+    if(p.deletedAt) m+=` → ${fmt(p.deletedAt)} <span class="chip s-DEL">삭제</span>`;
+    if(p.cat) m+=` <span class="tag">${esc(p.cat)}</span>`;
+    const eds=[...(p.statusLog||[]).map(e=>({at:e.changedAt,h:`<p class="ed">${fmt(e.at)} ${chip(e.status)} → ${fmt(e.changedAt)} ${e.to?chip(e.to):'기도 중'}</p>`})),
+      ...(p.edits||[]).map(e=>({at:e.at,h:`<p class="ed">${fmt(e.at)} 수정 · 이전: <s>${esc(e.from)}</s></p>`}))].sort((a,b)=>a.at-b.at).map(x=>x.h).join('');
+    return `<li data-act="hist-edit" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.text)} 기록 편집"><span class="dot ${p.deletedAt?'del':p.status?'s-'+p.status:'open'}" aria-hidden="true"></span><div><div class="meta">${m}</div><p class="txt"${p.deletedAt?' style="color:var(--muted)"':''}>${esc(p.text)}</p>${eds}</div></li>`;}).join('')}</ol>`;
+}
+function vPersonal(){
+  const list=personalActive();
+  let h=hasExamples()?`<div class="banner"><span>지금 보이는 내용은 예시예요. 설정에서 한 번에 지울 수 있어요.</span><button class="link" data-act="clear-ex">예시 지우기</button></div>`:'';
+  if(!list.length) return h+`<div class="list"><p class="empty">기도제목이 없어요.<br>오른쪽 아래 + 버튼으로 추가해 보세요.</p></div>`;
+  const cats=db.cats.filter(c=>list.some(p=>p.cat===c)), none=list.filter(p=>!p.cat||!db.cats.includes(p.cat));
+  if(S.cat!=='all'&&S.cat!=='none'&&!cats.includes(S.cat)) S.cat='all';
+  const grp=db.settings.groupByCat;
+  h+=`<div class="catbar" role="group" aria-label="분야">
+    <button data-act="cat" data-c="all" aria-pressed="${S.cat==='all'}">전체 ${list.length}</button>
+    ${cats.map(c=>`<button data-act="cat" data-c="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)} ${list.filter(p=>p.cat===c).length}</button>`).join('')}
+    ${none.length&&cats.length?`<button data-act="cat" data-c="none" aria-pressed="${S.cat==='none'}">분야 없음 ${none.length}</button>`:''}
+    ${S.cat==='all'&&cats.length?`<button class="grp" data-act="group" aria-pressed="${grp}">분야별로 모아 보기</button>`:''}</div>`;
+  const ul=a=>`<ul class="list">${a.map(p=>row(p,{bare:true})).join('')}</ul>`;
+  if(S.cat==='none') return h+ul(none);
+  if(S.cat!=='all') return h+ul(list.filter(p=>p.cat===S.cat));
+  if(!grp) return h+ul(list);
+  return h+cats.map(c=>{const a=list.filter(p=>p.cat===c);return `<h2 class="cathead"><span>${esc(c)}</span><span>${a.length}</span></h2>${ul(a)}`;}).join('')
+    +(none.length?`<h2 class="cathead"><span>분야 없음</span><span>${none.length}</span></h2>${ul(none)}`:'');
+}
+function vInter(){
+  const ppl=alivePeople();
+  if(!ppl.length) return `<div class="list"><p class="empty">아직 함께 기도할 사람이 없어요.<br>+ 버튼으로 사람을 추가해 보세요.</p></div>`;
+  const k=db.settings.peopleSort, up=db.settings.peopleDir==='asc';
+  const sw='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>';
+  const dl=k==='date'?(up?'오래된순':'최신순'):'최신순', al=k==='abc'?(up?'가나다순':'가나다 역순'):'가나다순';
+  const bar=`<div class="sortbar" role="group" aria-label="사람 순서. 선택된 버튼을 다시 누르면 순서가 뒤집혀요"><button data-act="psort" data-k="date" aria-pressed="${k==='date'}">${dl}${k==='date'?sw:''}</button><button data-act="psort" data-k="abc" aria-pressed="${k==='abc'}">${al}${k==='abc'?sw:''}</button></div>`;
+  return bar+`<div class="stack">${ppl.map(pp=>{
+    const a=activeOf(pp.id);
+    return `<section class="box" aria-label="${esc(pp.name)}"><div class="bh"><button class="nm" data-act="open-person" data-pid="${pp.id}">${esc(pp.name)} ›</button><button class="pin" data-act="pin" data-pid="${pp.id}" aria-pressed="${!!pp.pinnedAt}" aria-label="${esc(pp.name)} ${pp.pinnedAt?'고정 해제':'맨 위에 고정'}">${pinIcon(!!pp.pinnedAt)}</button></div>
+    ${a.length?`<ul class="list">${a.map(p=>row(p,{bare:true})).join('')}</ul>`:`<p class="empty">기도 중인 제목이 없어요. 이름을 눌러 추가해요.</p>`}</section>`;}).join('')}</div>`;
+}
+function vPerson(){
+  const pp=person(S.pid), a=activeOf(pp.id), hist=historyOf(pp.id);
+  let h=`<form class="addrow" id="person-add"><label class="sr" for="person-add-input">${esc(pp.name)}을(를) 위한 새 기도제목</label><input id="person-add-input" type="text" placeholder="${esc(pp.name)}을(를) 위한 새 기도제목" autocomplete="off" required><button class="btn">등록</button></form>
+  <div class="seg" style="margin-bottom:12px"><button data-act="ptab" data-tab="active" aria-pressed="${S.ptab==='active'}">기도 중 ${a.length}</button><button data-act="ptab" data-tab="history" aria-pressed="${S.ptab==='history'}">기도의 역사 ${hist.length}</button></div>`;
+  if(S.ptab==='active') h+=a.length?`<ul class="list">${a.map(p=>row(p)).join('')}</ul>`:`<div class="list"><p class="empty">기도 중인 제목이 없어요.</p></div>`;
+  else h+=histList(hist);
+  return h;
+}
+const personalHist=()=>db.prayers.filter(p=>!p.personId&&inHist(p)).sort((a,b)=>b.createdAt-a.createdAt);
+function vHistory(){
+  const all=personalHist(), cats=db.cats.filter(c=>all.some(p=>p.cat===c)), none=all.filter(p=>!p.cat||!db.cats.includes(p.cat));
+  if(S.hcat!=='all'&&S.hcat!=='none'&&!cats.includes(S.hcat)) S.hcat='all';
+  const list=S.hcat==='all'?all:S.hcat==='none'?none:all.filter(p=>p.cat===S.hcat);
+  const bar=cats.length?`<div class="catbar" role="group" aria-label="분야">
+    <button data-act="hcat" data-c="all" aria-pressed="${S.hcat==='all'}">전체 ${all.length}</button>
+    ${cats.map(c=>`<button data-act="hcat" data-c="${esc(c)}" aria-pressed="${S.hcat===c}">${esc(c)} ${all.filter(p=>p.cat===c).length}</button>`).join('')}
+    ${none.length?`<button data-act="hcat" data-c="none" aria-pressed="${S.hcat==='none'}">분야 없음 ${none.length}</button>`:''}</div>`:'';
+  return `<p class="hint" style="margin:0 4px 12px">항목을 누르면 날짜와 기록을 고칠 수 있어요.</p>`+bar+histList(list);
+}
+function vArchive(){
+  const all=archive().filter(p=>S.arch==='inter'?!!p.personId:!p.personId), list=S.filter==='all'?all:all.filter(p=>p.status===S.filter);
+  const cnt=k=>all.filter(p=>p.status===k).length;
+  const ap=archive();
+  return `<div class="seg" style="margin-bottom:12px"><button data-act="arch" data-a="personal" aria-pressed="${S.arch==='personal'}">개인 기도 ${ap.filter(p=>!p.personId).length}</button><button data-act="arch" data-a="inter" aria-pressed="${S.arch==='inter'}">중보기도 ${ap.filter(p=>p.personId).length}</button></div>
+  <div class="filters" role="group" aria-label="응답 종류">
+    <button data-act="filter" data-f="all" aria-pressed="${S.filter==='all'}">전체 ${all.length}</button>
+    <button data-act="filter" data-f="O" aria-pressed="${S.filter==='O'}">O ${cnt('O')}</button>
+    <button data-act="filter" data-f="X" aria-pressed="${S.filter==='X'}">X ${cnt('X')}</button>
+    <button data-act="filter" data-f="HIS" aria-pressed="${S.filter==='HIS'}">His Way ${cnt('HIS')}</button></div>
+  ${list.length?`<ul class="list">${list.map(p=>row(p,{who:true})).join('')}</ul>`:`<div class="list"><p class="empty">응답받은 기도제목이 여기 모여요.</p></div>`}`;
+}
+function vTrash(){
+  const items=trashed(), d=db.settings.trashDays;
+  let h=`<p class="hint" style="margin:0 4px 12px">삭제한 항목은 ${d}일 동안 보관된 뒤 완전히 지워져요.</p>`;
+  if(!items.length) return h+`<div class="list"><p class="empty">휴지통이 비어 있어요.</p></div>`;
+  h+=`<ul class="list">${items.map(it=>{
+    const left=Math.max(0,d-days(it.at,Date.now()));
+    const title=it.kind==='person'?`${esc(it.p.name)} <small style="color:var(--muted);font-weight:400">· 사람과 기도제목 ${db.prayers.filter(x=>x.personId===it.id).length}개</small>`:esc(it.p.text);
+    const who=it.kind==='prayer'&&it.p.personId&&person(it.p.personId)?`<span class="who">${esc(person(it.p.personId).name)}</span>`:'';
+    return `<li class="sw" data-kind="${it.kind}" data-id="${it.id}"><div class="sw-body" style="cursor:default"><div class="meta"><span>${fmt(it.at)} 삭제</span>${who}<span>${left}일 후 완전히 삭제</span>${it.kind==='prayer'&&it.p.delLogged?'<span>역사에 기록됨</span>':''}</div><p class="txt">${title}</p>
+    <div class="row-btns" style="margin-top:8px"><button class="btn ghost" data-act="restore">복원</button><button class="btn danger" data-act="purge-one">완전히 삭제</button></div></div></li>`;}).join('')}</ul>
+    <div style="margin-top:12px"><button class="btn danger" data-act="empty-trash">휴지통 비우기</button></div>`;
+  return h;
+}
+function radios(name,opts,cur){return `<div class="seg" role="radiogroup">${opts.map(([v,l])=>`<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${String(cur)===String(v)?'checked':''}>${l}</label>`).join('')}</div>`;}
+function vPrefs(){
+  const s=db.settings;
+  return `${syncSection()}<section class="group"><h2>화면</h2>
+    <div class="field"><span>화면 모드</span>${radios('theme',[['system','시스템'],['light','라이트'],['dark','다크']],s.theme)}</div>
+    <div class="field"><span>글자 크기</span>${radios('font',[['xs','<span style="font-size:13px">가</span><span class="sr">아주 작게</span>'],['s','<span style="font-size:14px">가</span><span class="sr">작게</span>'],['m','<span style="font-size:16px">가</span><span class="sr">보통</span>'],['l','<span style="font-size:18px">가</span><span class="sr">크게</span>'],['xl','<span style="font-size:20px">가</span><span class="sr">아주 크게</span>']],s.font)}</div></section>
+  <section class="group"><h2>목록</h2>
+    <div class="field"><span>기도제목 순서</span>${radios('sort',[['new','최근 등록 먼저'],['old','오래된 것 먼저']],s.sort)}</div></section>
+  <section class="group"><h2>개인 기도 분야</h2>
+    <div>${db.cats.map(c=>`<div class="catrow"><span>${esc(c)} <small style="color:var(--muted)">${db.prayers.filter(p=>p.cat===c&&!p.deletedAt).length}</small></span><button class="btn ghost" data-act="cat-rename" data-c="${esc(c)}">이름 바꾸기</button><button class="btn danger" data-act="cat-del" data-c="${esc(c)}">삭제</button></div>`).join('')}</div>
+    <div class="addrow" style="padding:0;margin:0;background:transparent"><label class="sr" for="cat-new">새 분야 이름</label><input id="cat-new" type="text" placeholder="새 분야 이름" autocomplete="off"><button class="btn" data-act="cat-add">추가</button></div>
+    <p class="hint">분야를 지우면 그 분야의 기도제목은 '분야 없음'이 돼요.</p></section>
+  <section class="group"><h2>휴지통</h2>
+    <div class="field"><span>삭제한 항목 보관 기간</span>${radios('trashDays',[[7,'7일'],[30,'30일'],[90,'90일']],s.trashDays)}</div></section>
+  <section class="group"><h2>백업</h2>
+    <p class="hint">혹시 모를 때를 위해 가끔 백업해 두세요.</p>
+    <div class="row-btns"><button class="btn ghost" data-act="backup-copy">백업 내용 복사</button><label class="btn ghost" style="display:inline-flex;align-items:center" for="backup-file">백업 파일 열기</label><input id="backup-file" type="file" accept=".json,.txt,application/json" class="sr"></div>
+    <div class="field"><label for="backup-text" class="hint">또는 복사해 둔 백업 내용을 붙여넣으세요</label><textarea id="backup-text" placeholder='{"prayers":[...]}'></textarea>
+    <div><button class="btn" data-act="backup-import">백업 불러오기</button></div></div></section>
+  ${hasExamples()?`<section class="group"><h2>예시</h2><p class="hint">처음에 보여드린 예시 사람과 기도제목을 모두 지워요.</p><div><button class="btn danger" data-act="clear-ex">예시 지우기</button></div></section>`:''}`;
+}
+function render(){
+  if(S.view==='person'&&!(person(S.pid)&&!person(S.pid).deletedAt)) S.view='intercession';
+  $('#top').innerHTML=header();
+  const V={personal:vPersonal,intercession:vInter,person:vPerson,archive:vArchive,history:vHistory,trash:vTrash,prefs:vPrefs}[S.view];
+  $('#view').innerHTML=V();
+  const tab=S.view==='person'?'intercession':S.view;
+  document.querySelectorAll('#tabs button').forEach(b=>b.toggleAttribute('aria-current',false)||b.dataset.go===tab&&b.setAttribute('aria-current','page'));
+  $('#fab').hidden=!['personal','intercession','person'].includes(S.view);
+  $('#fab').setAttribute('aria-label',S.view==='intercession'?'사람 추가 또는 찾기':'기도제목 추가');
+  document.title='기도제목 노트';
+}
+
+/* ---------- overlays ---------- */
+let overlay=[];
+function closeAll(){overlay.forEach(e=>e.remove());overlay=[];}
+function dropToast(){const t=document.querySelector('.toast');t&&t.remove();}
+function scrim(dim){const s=document.createElement('div');s.className='scrim'+(dim?' dim':'');s.addEventListener('click',closeAll);document.body.append(s);overlay.push(s);return s;}
+function place(el,anchor){
+  const r=anchor.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight,vw=innerWidth,vh=innerHeight;
+  let left=Math.min(r.right-w,vw-w-12);left=Math.max(12,left);
+  let top=r.bottom+6;if(top+h>vh-12) top=Math.max(12,r.top-h-6);
+  el.style.left=left+'px';el.style.top=top+'px';
+}
+function menu(anchor,html){
+  closeAll();dropToast();scrim(false);
+  const m=document.createElement('div');m.className='menu';m.setAttribute('role','menu');m.innerHTML=html;document.body.append(m);overlay.push(m);
+  place(m,anchor);const f=m.querySelector('button');f&&f.focus();
+}
+function sheet(html,onSubmit){
+  closeAll();dropToast();scrim(true);
+  const s=document.createElement('form');s.className='sheet';s.setAttribute('role','dialog');s.setAttribute('aria-modal','true');
+  s.innerHTML='<span class="grab" aria-hidden="true"></span>'+html;document.body.append(s);overlay.push(s);
+  s.addEventListener('submit',e=>{e.preventDefault();onSubmit&&onSubmit(s,e.submitter);});
+  const f=s.querySelector('textarea,input');f&&setTimeout(()=>f.focus(),30);
+  return s;
+}
+function drawer(){
+  closeAll();scrim(true);
+  const d=document.createElement('nav');d.className='drawer';d.setAttribute('aria-label','전체 메뉴');
+  const cur=S.view==='person'?'intercession':S.view;
+  const it=(v,l,c)=>`<button data-go="${v}" ${cur===v?'aria-current="page"':''}>${l}${c!=null?`<small>${c}</small>`:''}</button>`;
+  d.innerHTML=`<h2>기도제목 노트</h2>${it('personal','개인 기도',personalActive().length)}${it('intercession','중보기도',alivePeople().length+'명')}<hr>${it('archive','응답 보관함',archive().length)}${it('history','개인 기도의 역사',personalHist().length)}${it('trash','휴지통',trashed().length)}<hr>${it('prefs','설정')}<div style="margin-top:auto">${syncLine(true)}</div>`;
+  document.body.append(d);overlay.push(d);d.querySelector('button').focus();
+}
+let toastT=null;
+function toast(msg,undo){
+  const old=$('.toast');old&&old.remove();clearTimeout(toastT);
+  const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');
+  t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button>되돌리기</button>':''}`;
+  if(undo) t.querySelector('button').onclick=()=>{undo();t.remove();};
+  document.body.append(t);toastT=setTimeout(()=>t.remove(),4500);
+}
+
+/* ---------- mutations ---------- */
+const P=id=>db.prayers.find(p=>p.id===id);
+function commit(){save();render();}
+function addPrayer(text,personId){text=text.trim();if(!text)return;db.prayers.push({id:uid(),text,createdAt:Date.now(),personId:personId||null,status:null,statusAt:null,deletedAt:null});commit();}
+function setStatus(id,next,log){
+  const p=P(id),prev={status:p.status,statusAt:p.statusAt,statusLog:p.statusLog};
+  if(log&&p.status&&p.status!==next) p.statusLog=(p.statusLog||[]).concat({status:p.status,at:p.statusAt,changedAt:Date.now(),to:next});
+  p.status=next;p.statusAt=next?Date.now():null;
+  commit();
+  const undo=()=>{Object.assign(p,prev);if(!prev.statusLog)delete p.statusLog;commit();};
+  const tail=log&&prev.status?' · 역사에 기록했어요':'';
+  if(ANSWERED.has(next)&&!ANSWERED.has(prev.status)) toast(`${LABEL[next]} · 응답 보관함으로 옮겼어요${tail}`,undo);
+  else if(!next) toast(`기도 중으로 되돌렸어요${tail}`,undo);
+  else toast(`응답을 바꿨어요 (${prev.status?LABEL[prev.status]+' → ':''}${LABEL[next]})${tail}`,undo);
+}
+function askStatusLog(btn,id,next){
+  const m=btn.closest('.menu');
+  const what=next?`${LABEL[P(id).status]} → ${LABEL[next]}`:`${LABEL[P(id).status]} → 기도 중`;
+  m.innerHTML=`<div class="lbl">응답이 바뀌었어요 (${what}). 기도의 역사에 남길까요?</div><button class="mi" data-act="answer-do" data-s="${next||''}" data-log="1" data-id="${id}">기록 남기고 바꾸기</button><button class="mi" data-act="answer-do" data-s="${next||''}" data-log="0" data-id="${id}">기록 없이 바꾸기</button><button class="mi" data-act="close" style="border-top:1px solid var(--line)">취소</button>`;
+  m.querySelector('button').focus();
+}
+function delPrayer(id,log){const p=P(id);p.deletedAt=Date.now();p.delLogged=!!log;commit();toast(log?'휴지통으로 옮기고 역사에 기록했어요':'휴지통으로 옮겼어요',()=>{p.deletedAt=null;p.delLogged=false;commit();});}
+function delPerson(id){const p=person(id);p.deletedAt=Date.now();save();go('intercession');toast(`${p.name}을(를) 휴지통으로 옮겼어요`,()=>{p.deletedAt=null;commit();});}
+
+function prayerMenu(btn,id){
+  const p=P(id);
+  const ans=Object.keys(LABEL).map(k=>`<button class="s-${k}" data-act="answer" data-s="${k}" data-id="${id}" aria-pressed="${p.status===k}">${LABEL[k]}</button>`).join('');
+  const body=isAns(p)
+    ?`<button class="mi" data-act="edit" data-id="${id}">수정</button><div class="lbl">응답 바꾸기</div><div class="answers">${ans}</div><button class="mi" data-act="unanswer" data-id="${id}">기도 중으로 되돌리기</button>`
+    :`<button class="mi" data-act="edit" data-id="${id}">수정</button><div class="lbl">응답</div><div class="answers">${ans}</div>`;
+  menu(btn,body+`<button class="mi danger" data-act="del-ask" data-id="${id}">삭제</button>`);
+}
+function catPicker(cur){
+  const opts=[['','없음']].concat(db.cats.map(c=>[c,c]));
+  return `<div class="field"><span class="hint">분야</span><div class="pick" role="radiogroup" aria-label="분야">${opts.map(([v,l],i)=>`<label><input type="radio" name="cat" id="cat-pick-${i}" value="${esc(v)}" ${String(cur||'')===v?'checked':''}>${esc(l)}</label>`).join('')}</div>
+  <label class="sr" for="cat-pick-new">새 분야 이름</label><input id="cat-pick-new" type="text" placeholder="+ 새 분야 만들기 (선택)" autocomplete="off" style="height:40px"></div>`;
+}
+function readCat(f){
+  const n=f.querySelector('#cat-pick-new');const v=n&&n.value.trim();
+  if(v){if(!db.cats.includes(v))db.cats.push(v);return v;}
+  const r=f.querySelector('input[name=cat]:checked');return r&&r.value?r.value:null;
+}
+function catRenameSheet(c){
+  sheet(`<h2>분야 이름 바꾸기</h2><label class="sr" for="cr">분야 이름</label><input id="cr" type="text" value="${esc(c)}" required autocomplete="off"><div class="row-btns"><button class="btn">저장</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+    f=>{const v=f.querySelector('input').value.trim();if(!v)return;closeAll();if(v===c)return;
+      db.cats=db.cats.includes(v)?db.cats.filter(x=>x!==c):db.cats.map(x=>x===c?v:x);
+      db.prayers.forEach(p=>{if(p.cat===c)p.cat=v;});if(S.cat===c)S.cat=v;commit();});
+}
+const toDate=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const fromDate=(v,orig)=>{if(!v)return orig;const [y,m,d]=v.split('-').map(Number);const o=new Date(orig||Date.now());return new Date(y,m-1,d,o.getHours(),o.getMinutes()).getTime();};
+function histSheet(id){
+  const p=P(id);if(!p)return;const st=p.status||'';
+  const opts=[['','기도 중'],['O','O'],['X','X'],['WAIT','Wait'],['HIS','His Way']];
+  const eds=(p.edits||[]).map((e,i)=>`<div class="catrow" data-ei="${i}"><input type="date" id="hs-ed-${i}" value="${toDate(e.at)}" aria-label="수정한 날짜" style="width:9.5em;flex:none"><span style="font-size:.85rem;overflow-wrap:anywhere;min-width:0">이전: ${esc(e.from)}</span><button type="button" class="btn danger" data-act="ed-del" aria-label="이 수정 기록 지우기">지우기</button></div>`).join('');
+  const sls=(p.statusLog||[]).map((e,i)=>`<div class="catrow" data-si="${i}"><span style="font-size:.85rem;min-width:0">${chip(e.status)} → ${e.to?chip(e.to):'기도 중'}</span><input type="date" value="${toDate(e.changedAt)}" aria-label="바뀐 날짜" style="width:9.5em;flex:none"><button type="button" class="btn danger" data-act="ed-del" aria-label="이 응답 변경 기록 지우기">지우기</button></div>`).join('');
+  sheet(`<h2>기도의 역사 편집</h2>
+  <div class="field"><label class="hint" for="hs-text">기도제목</label><textarea id="hs-text" required>${esc(p.text)}</textarea></div>
+  <div class="field"><label class="hint" for="hs-created">등록일</label><input type="date" id="hs-created" value="${toDate(p.createdAt)}" required></div>
+  <div class="field"><span class="hint">응답</span><div class="pick" role="radiogroup" aria-label="응답">${opts.map(([v,l])=>`<label><input type="radio" name="hs-st" id="hs-st-${v||'none'}" value="${v}" ${st===v?'checked':''}>${l}</label>`).join('')}</div>
+  <label class="hint" for="hs-stat">응답일 (응답을 고른 경우)</label><input type="date" id="hs-stat" value="${toDate(p.statusAt||Date.now())}"></div>
+  ${p.deletedAt?`<div class="field"><label class="hint" for="hs-del">삭제일</label><input type="date" id="hs-del" value="${toDate(p.deletedAt)}"></div>`:''}
+  ${sls?`<div class="field"><span class="hint">응답 변경 기록</span><div>${sls}</div></div>`:''}
+  ${eds?`<div class="field"><span class="hint">수정 기록</span><div>${eds}</div></div>`:''}
+  <div class="row-btns"><button class="btn">저장</button>${p.deletedAt?`<button type="button" class="btn ghost" data-act="hist-restore" data-id="${id}">기도 중으로 복귀</button>`:''}<button type="button" class="btn ghost" data-act="close">취소</button></div>
+  ${p.deletedAt?`<div><button type="button" class="btn danger" data-act="hist-remove" data-id="${id}">역사에서 지우기</button></div>`:''}`,
+  f=>{const v=f.querySelector('#hs-text').value.trim();if(!v)return;
+    p.text=v;p.createdAt=fromDate(f.querySelector('#hs-created').value,p.createdAt);
+    const ns=(f.querySelector('input[name=hs-st]:checked')||{}).value||null;
+    p.statusAt=ns?fromDate(f.querySelector('#hs-stat').value,p.statusAt||Date.now()):null;p.status=ns;
+    const dl=f.querySelector('#hs-del');if(dl&&p.deletedAt)p.deletedAt=fromDate(dl.value,p.deletedAt);
+    if(p.statusLog)p.statusLog=[...f.querySelectorAll('[data-si]')].map(r=>{const e=p.statusLog[+r.dataset.si];return Object.assign({},e,{changedAt:fromDate(r.querySelector('input').value,e.changedAt)});}).sort((a,b)=>a.changedAt-b.changedAt);
+    if(p.edits)p.edits=[...f.querySelectorAll('[data-ei]')].map(r=>{const e=p.edits[+r.dataset.ei];return{at:fromDate(r.querySelector('input').value,e.at),from:e.from};}).sort((a,b)=>a.at-b.at);
+    closeAll();commit();toast('기도의 역사를 고쳤어요');});
+}
+function editSheet(id){
+  const p=P(id);
+  sheet(`<h2>기도제목 수정</h2><label class="sr" for="edit-text">기도제목</label><textarea id="edit-text" required>${esc(p.text)}</textarea>${p.personId?'':catPicker(p.cat)}
+  <p class="hint" style="margin:0">'기록하고 수정'을 고르면 바뀌기 전 내용이 기도의 역사에 남아요.</p>
+  <div class="row-btns"><button class="btn" value="log">기록하고 수정</button><button class="btn ghost" value="quiet">기록 없이 수정</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+    (f,sub)=>{const v=f.querySelector('textarea').value.trim();if(!v)return;
+      let catChanged=false;if(!p.personId){const c=readCat(f);catChanged=(c||null)!==(p.cat||null);p.cat=c;}
+      closeAll();if(v===p.text){if(catChanged){commit();toast('분야를 바꿨어요');}return;}
+      const log=!sub||sub.value!=='quiet';
+      if(log){p.edits=(p.edits||[]).concat({at:Date.now(),from:p.text});}
+      p.text=v;commit();toast(log?'수정하고 기록을 남겼어요':'기록 없이 수정했어요');});
+}
+function addSheet(){
+  sheet(`<h2>새 기도제목</h2><label class="sr" for="new-text">기도제목</label><textarea id="new-text" placeholder="어떤 기도제목인가요?" required></textarea>${catPicker(S.cat!=='all'&&S.cat!=='none'?S.cat:'')}<p class="hint" style="margin:0">오늘(${fmt(Date.now())}) 날짜로 등록돼요.</p><div class="row-btns"><button class="btn">등록</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+    f=>{const v=f.querySelector('textarea').value.trim();if(!v)return;const c=readCat(f);closeAll();db.prayers.push({id:uid(),text:v,createdAt:Date.now(),personId:null,cat:c,status:null,statusAt:null,deletedAt:null});commit();});
+}
+function newPersonSheet(prefill){
+  sheet(`<h2>새 사람 추가</h2><label for="np-name" class="hint">이름</label><input id="np-name" type="text" value="${esc(prefill||'')}" placeholder="예: 어머니, 김민수" autocomplete="off" required>
+  <label for="np-first" class="hint">첫 기도제목 (선택)</label><input id="np-first" type="text" placeholder="비워 두어도 돼요" autocomplete="off"><div class="row-btns"><button class="btn">추가</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+  f=>{const name=f.querySelector('#np-name').value.trim();if(!name)return;const id=uid();db.people.push({id,name,createdAt:Date.now(),deletedAt:null});
+    const first=f.querySelector('#np-first').value.trim();if(first) db.prayers.push({id:uid(),text:first,createdAt:Date.now(),personId:id,status:null,statusAt:null,deletedAt:null});
+    save();closeAll();go('person',id);});
+}
+function findSheet(){
+  const s=sheet(`<h2>사람 찾아서 기도제목 추가</h2><label class="sr" for="find-q">이름 검색</label><input id="find-q" type="search" placeholder="이름 검색" autocomplete="off"><ul class="people" id="find-list"></ul>`,null);
+  const q=s.querySelector('#find-q'),ul=s.querySelector('#find-list');
+  const draw=()=>{const t=q.value.trim();const m=alivePeople().filter(p=>p.name.includes(t));
+    ul.innerHTML=m.map(p=>`<li><button type="button" data-act="open-person" data-pid="${p.id}">${esc(p.name)}<small>기도 중 ${activeOf(p.id).length}</small></button></li>`).join('')
+      +(t&&!m.some(p=>p.name===t)?`<li><button type="button" data-act="new-person" data-name="${esc(t)}"><b>+ ‘${esc(t)}’ 새 사람으로 추가</b></button></li>`:'')
+      +(!t&&!m.length?`<li><button type="button" data-act="new-person">+ 새 사람 추가</button></li>`:'');};
+  q.addEventListener('input',draw);draw();
+}
+function renameSheet(){
+  const p=person(S.pid);
+  sheet(`<h2>이름 바꾸기</h2><label class="sr" for="rn">이름</label><input id="rn" type="text" value="${esc(p.name)}" required autocomplete="off"><div class="row-btns"><button class="btn">저장</button><button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+    f=>{const v=f.querySelector('input').value.trim();if(!v)return;p.name=v;closeAll();commit();});
+}
+
+/* two-tap confirm for permanent actions (dialogs are unavailable) */
+function armed(btn,label,fn){
+  if(btn.classList.contains('armed')){fn();return;}
+  btn.classList.add('armed');const old=btn.textContent;btn.textContent=label;
+  setTimeout(()=>{if(btn.isConnected){btn.classList.remove('armed');btn.textContent=old;}},3500);
+}
+
+/* ---------- swipe ---------- */
+let drag=null,openRow=null,suppress=false;
+function openSwipe(r){if(openRow&&openRow!==r)openRow.classList.remove('open');r.classList.add('open');openRow=r;r.querySelector('.sw-act').tabIndex=0;}
+function closeRow(){if(openRow){openRow.classList.remove('open');const a=openRow.querySelector('.sw-act');a&&(a.tabIndex=-1);}openRow=null;}
+document.addEventListener('pointerdown',e=>{
+  if(openRow&&!e.target.closest('.sw.open')&&!e.target.closest('.menu')) closeRow();
+  const b=e.target.closest('.sw-body');if(!b||!b.parentElement.querySelector('.sw-act'))return;
+  drag={el:b,row:b.parentElement,x:e.clientX,y:e.clientY,base:b.parentElement.classList.contains('open')?-W:0,dx:0,on:false,id:e.pointerId};
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.on){
+    if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){drag.on=true;drag.el.style.transition='none';try{drag.el.setPointerCapture(e.pointerId)}catch(_){}}
+    else if(Math.abs(dy)>10){drag=null;return;} else return;
+  }
+  drag.dx=dx;drag.el.style.transform=`translateX(${Math.max(-W-28,Math.min(0,drag.base+dx))}px)`;
+});
+function endDrag(){
+  if(!drag)return;const d=drag;drag=null;if(!d.on)return;
+  d.el.style.transition='';d.el.style.transform='';
+  (d.base+d.dx< -W/2)?openSwipe(d.row):(d.row===openRow?closeRow():d.row.classList.remove('open'));
+  suppress=true;setTimeout(()=>suppress=false,50);
+}
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+let wheelAcc=0,wheelT=null;
+document.addEventListener('wheel',e=>{
+  const b=e.target.closest('.sw-body');if(!b||!b.parentElement.querySelector('.sw-act'))return;
+  if(Math.abs(e.deltaX)<=Math.abs(e.deltaY))return;
+  e.preventDefault();wheelAcc+=e.deltaX;clearTimeout(wheelT);wheelT=setTimeout(()=>wheelAcc=0,180);
+  if(wheelAcc>40){openSwipe(b.parentElement);wheelAcc=0;} else if(wheelAcc<-40){if(openRow===b.parentElement)closeRow();wheelAcc=0;}
+},{passive:false});
+document.addEventListener('contextmenu',e=>{
+  const b=e.target.closest('.sw-body');if(!b||!b.parentElement.querySelector('.sw-act'))return;
+  e.preventDefault();openSwipe(b.parentElement);prayerMenu(b.parentElement.querySelector('.sw-act'),b.parentElement.dataset.id);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeAll();closeRow();return;}
+  if(e.key==='Enter'&&e.target.matches&&e.target.matches('li[data-act=hist-edit]')){e.preventDefault();histSheet(e.target.dataset.id);return;}
+  const b=e.target.closest&&e.target.closest('.sw-body');
+  if(b&&b.parentElement.querySelector('.sw-act')&&(e.key==='Enter'||e.key===' '||e.key==='ContextMenu')){
+    e.preventDefault();openSwipe(b.parentElement);prayerMenu(b.parentElement.querySelector('.sw-act'),b.parentElement.dataset.id);}
+});
+
+/* ---------- clicks ---------- */
+document.addEventListener('click',e=>{
+  if(suppress){e.preventDefault();return;}
+  const g=e.target.closest('[data-go]');if(g){closeAll();go(g.dataset.go);return;}
+  const b=e.target.closest('[data-act]');
+  if(!b){const body=e.target.closest('.sw.open .sw-body');if(body)closeRow();return;}
+  const id=b.dataset.id||(b.closest('.sw')&&b.closest('.sw').dataset.id);
+  switch(b.dataset.act){
+    case 'more':prayerMenu(b,id);break;
+    case 'answer':{const p=P(id),sv=b.dataset.s,next=p.status===sv?null:sv;
+      if(ANSWERED.has(p.status)){if(next!==p.status)askStatusLog(b,id,next);break;}
+      closeAll();closeRow();setStatus(id,next,p.status==='WAIT'&&!!next);break;}
+    case 'unanswer':askStatusLog(b,id,null);break;
+    case 'answer-do':closeAll();closeRow();setStatus(id,b.dataset.s||null,b.dataset.log==='1');break;
+    case 'edit':closeRow();editSheet(id);break;
+    case 'del':closeAll();closeRow();delPrayer(id,b.dataset.log==='1');break;
+    case 'close':closeAll();break;
+    case 'sign-out':CLOUD.sb&&CLOUD.sb.auth.signOut();break;
+    case 'supa-save':{db.settings.supaUrl=$('#supa-url').value.trim();db.settings.supaKey=$('#supa-key').value.trim();saveLocal();stopCloud();cloudInit();toast('연결 정보를 저장했어요');break;}
+    case 'hist-edit':histSheet(b.dataset.id);break;
+    case 'ed-del':b.closest('[data-ei],[data-si]').remove();break;
+    case 'hist-restore':{closeAll();const p=P(id);p.deletedAt=null;p.gone=false;p.delLogged=false;commit();toast('기도 중으로 복귀했어요');break;}
+    case 'hist-remove':armed(b,'한 번 더 누르면 지워요',()=>{const p=P(id);closeAll();if(p.gone)db.prayers=db.prayers.filter(x=>x!==p);else p.delLogged=false;commit();toast('역사에서 지웠어요');});break;
+    case 'drawer':drawer();break;
+    case 'back':go('intercession');break;
+    case 'fab':
+      if(S.view==='personal')addSheet();
+      else if(S.view==='person'){const i=$('#person-add-input');i&&i.focus();}
+      else menu($('#fab'),`<button class="mi" data-act="find-person">사람 찾아서 기도제목 추가</button><button class="mi" data-act="new-person" style="border-top:1px solid var(--line)">새 사람 추가</button>`);
+      break;
+    case 'find-person':findSheet();break;
+    case 'new-person':newPersonSheet(b.dataset.name);break;
+    case 'open-person':closeAll();go('person',b.dataset.pid);break;
+    case 'person-more':menu(b,`<button class="mi" data-act="pin" data-pid="${S.pid}">${person(S.pid).pinnedAt?'고정 해제':'맨 위에 고정'}</button><button class="mi" data-act="rename">이름 바꾸기</button><button class="mi danger" data-act="del-person">이 사람 삭제</button>`);break;
+    case 'rename':renameSheet();break;
+    case 'del-person':closeAll();delPerson(S.pid);break;
+    case 'ptab':S.ptab=b.dataset.tab;render();break;
+    case 'filter':S.filter=b.dataset.f;render();break;
+    case 'mtab':S.mtab=b.dataset.tab;render();break;
+    case 'arch':S.arch=b.dataset.a;S.filter='all';render();break;
+    case 'to-archive':S.arch=b.dataset.a;S.filter='all';go('archive');break;
+    case 'psort':{const k=b.dataset.k;if(db.settings.peopleSort===k)db.settings.peopleDir=db.settings.peopleDir==='asc'?'desc':'asc';else{db.settings.peopleSort=k;db.settings.peopleDir=k==='abc'?'asc':'desc';}commit();break;}
+    case 'cat':S.cat=b.dataset.c;render();break;
+    case 'hcat':S.hcat=b.dataset.c;render();break;
+    case 'group':db.settings.groupByCat=!db.settings.groupByCat;commit();break;
+    case 'del-ask':{const m=b.closest('.menu');m.innerHTML=`<div class="lbl">기도의 역사에 삭제 기록을 남길까요?</div><button class="mi" data-act="del" data-log="1" data-id="${id}">기록 남기고 삭제</button><button class="mi" data-act="del" data-log="0" data-id="${id}">기록 없이 삭제</button><button class="mi" data-act="close" style="border-top:1px solid var(--line)">취소</button>`;m.querySelector('button').focus();break;}
+    case 'cat-add':{const i=$('#cat-new');const v=i.value.trim();if(v&&!db.cats.includes(v)){db.cats.push(v);commit();toast(`'${v}' 분야를 추가했어요`);}break;}
+    case 'cat-rename':catRenameSheet(b.dataset.c);break;
+    case 'cat-del':armed(b,'한 번 더',()=>{const c=b.dataset.c;db.cats=db.cats.filter(x=>x!==c);db.prayers.forEach(p=>{if(p.cat===c)p.cat=null;});commit();toast(`'${c}' 분야를 지웠어요`);});break;
+    case 'pin':{closeAll();const pp=person(b.dataset.pid);pp.pinnedAt=pp.pinnedAt?null:Date.now();commit();toast(pp.pinnedAt?`${pp.name}을(를) 맨 위에 고정했어요`:'고정을 해제했어요');break;}
+    case 'restore':{const li=b.closest('.sw');if(li.dataset.kind==='person')person(li.dataset.id).deletedAt=null;else{const p=P(li.dataset.id);p.deletedAt=null;p.delLogged=false;}commit();toast('복원했어요');break;}
+    case 'purge-one':armed(b,'한 번 더 누르면 삭제',()=>{const li=b.closest('.sw');if(li.dataset.kind==='person'){db.people=db.people.filter(p=>p.id!==li.dataset.id);db.prayers=db.prayers.filter(p=>p.personId!==li.dataset.id);}else{const p=P(li.dataset.id);if(p.delLogged)p.gone=true;else db.prayers=db.prayers.filter(x=>x!==p);}commit();toast('완전히 삭제했어요');});break;
+    case 'empty-trash':armed(b,'한 번 더 누르면 모두 삭제',()=>{const gone=new Set(db.people.filter(p=>p.deletedAt).map(p=>p.id));db.people=db.people.filter(p=>!p.deletedAt);db.prayers=db.prayers.filter(p=>!gone.has(p.personId)&&(!p.deletedAt||p.delLogged));db.prayers.forEach(p=>{if(p.deletedAt)p.gone=true;});commit();toast('휴지통을 비웠어요');});break;
+    case 'clear-ex':armed(b,'한 번 더 누르면 예시 삭제',()=>{const ex=new Set(db.people.filter(p=>p.ex).map(p=>p.id));db.people=db.people.filter(p=>!p.ex);db.prayers=db.prayers.filter(p=>!p.ex&&!ex.has(p.personId));commit();toast('예시를 지웠어요');});break;
+    case 'backup-copy':{const txt=JSON.stringify({app:'prayer-notes',v:1,exportedAt:new Date().toISOString(),prayers:db.prayers,people:db.people,cats:db.cats,settings:db.settings});
+      const ta=$('#backup-text');
+      navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>toast('백업 내용을 복사했어요. 메모 앱 등에 붙여넣어 보관하세요.'),()=>{ta.value=txt;ta.select();toast('아래 칸의 내용을 직접 복사해 주세요');});
+      if(!navigator.clipboard){ta.value=txt;ta.select();toast('아래 칸의 내용을 직접 복사해 주세요');}
+      break;}
+    case 'backup-import':importText($('#backup-text').value);break;
+  }
+});
+function importText(txt){
+  try{const d=JSON.parse(txt);if(!Array.isArray(d.prayers)||!Array.isArray(d.people))throw 0;
+    db={prayers:d.prayers,people:d.people,cats:Array.isArray(d.cats)?d.cats:db.cats,settings:Object.assign({},db.settings,d.settings||{})};applyPrefs();commit();toast(`불러왔어요 · 기도제목 ${d.prayers.length}개`);}
+  catch(_){toast('백업 내용을 읽지 못했어요. 복사한 내용 전체를 붙여넣었는지 확인해 주세요.');}
+}
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='backup-file'&&t.files[0]){const r=new FileReader();r.onload=()=>importText(r.result);r.readAsText(t.files[0]);return;}
+  if(t.type==='radio'&&t.name in db.settings){
+    db.settings[t.name]=t.name==='trashDays'?Number(t.value):t.value;applyPrefs();
+    if(t.name==='trashDays')purge();save();
+  }
+});
+document.addEventListener('submit',async e=>{
+  if(e.target.id==='auth-form'){e.preventDefault();
+    const em=$('#auth-email').value.trim(),pw=$('#auth-pw').value,up=e.submitter&&e.submitter.value==='up';
+    if(!CLOUD.sb)return;
+    const r=up?await CLOUD.sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.href.split('#')[0].startsWith('http')?location.href.split('#')[0]:undefined}}):await CLOUD.sb.auth.signInWithPassword({email:em,password:pw});
+    if(r.error){toast(/Invalid login/i.test(r.error.message)?'이메일이나 비밀번호가 맞지 않아요':/registered/i.test(r.error.message)?'이미 가입된 이메일이에요. 로그인해 주세요':/confirm/i.test(r.error.message)?'메일함의 확인 링크를 먼저 눌러 주세요':'로그인하지 못했어요: '+r.error.message);return;}
+    if(up&&!r.data.session){toast('확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요');return;}
+    toast('로그인했어요');return;}
+  if(e.target.id==='person-add'){e.preventDefault();const i=$('#person-add-input');const v=i.value;S.ptab='active';addPrayer(v,S.pid);const n=$('#person-add-input');n&&n.focus();toast('등록했어요');}
+});
+
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
+document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','=','-','_','0'].includes(e.key))e.preventDefault();});
+load();applyPrefs();parseHash();render();cloudInit();
+})();
+</script>
+</body></html>
