@@ -900,8 +900,16 @@ document.addEventListener('click',e=>{
     case 'backup-import':importText($('#backup-text').value);break;
   }
 });
+function mergeImport(d){
+  const byName=new Map(db.people.filter(p=>!p.deletedAt).map(p=>[p.name,p.id])),map={};let np=0,nr=0;
+  for(const p of d.people){if(byName.has(p.name))map[p.id]=byName.get(p.name);else{db.people.push(Object.assign({},p,{deletedAt:null}));byName.set(p.name,p.id);map[p.id]=p.id;np++;}}
+  const have=new Set(db.prayers.map(p=>p.id));
+  for(const p of d.prayers){if(have.has(p.id))continue;db.prayers.push(Object.assign({},p,{personId:p.personId?(map[p.personId]||p.personId):null}));nr++;}
+  commit();toast(`추가했어요 · 새 사람 ${np}명, 기도제목 ${nr}개`);
+}
 function importText(txt){
   try{const d=JSON.parse(txt);if(!Array.isArray(d.prayers)||!Array.isArray(d.people))throw 0;
+    if(d.merge===true){mergeImport(d);return;}
     db={prayers:d.prayers,people:d.people,cats:Array.isArray(d.cats)?d.cats:db.cats,settings:Object.assign({},db.settings,d.settings||{})};applyPrefs();commit();toast(`불러왔어요 · 기도제목 ${d.prayers.length}개`);}
   catch(_){toast('백업 내용을 읽지 못했어요. 복사한 내용 전체를 붙여넣었는지 확인해 주세요.');}
 }
