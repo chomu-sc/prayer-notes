@@ -189,6 +189,8 @@ textarea{box-sizing:border-box;max-height:60vh;overflow-y:auto;width:100%;min-he
   .toast{bottom:24px}
   .sw-body{cursor:pointer}
 }
+.note{margin:6px 0 0;padding:8px 10px;border-radius:8px;background:var(--surface-2);font-size:.85rem;line-height:1.55;color:var(--fg);white-space:pre-wrap;overflow-wrap:anywhere}
+.note b{display:block;font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion: reduce){.sw-body{transition:none}}
 </style>
@@ -463,7 +465,7 @@ function row(p,o){
   if(p.edits&&p.edits.length) meta+=`<span>수정됨</span>`;
   if(p.status) meta+=chip(p.status)+(isAns(p)?`<span>${fmtS(p.statusAt)} 응답</span>`:'');
   return `<li class="sw" data-id="${p.id}"><button class="sw-act" data-act="more" aria-label="더보기 메뉴" tabindex="-1">···</button>
-  <div class="sw-body" tabindex="0" aria-label="${esc(p.text)}. 옆으로 밀거나 Enter로 메뉴 열기">${o.bare?'':`<div class="meta">${meta}</div>`}<p class="txt">${esc(p.text)}</p></div></li>`;
+  <div class="sw-body" tabindex="0" aria-label="${esc(p.text)}. 옆으로 밀거나 Enter로 메뉴 열기">${o.bare?'':`<div class="meta">${meta}</div>`}<p class="txt">${esc(p.text)}</p>${o.bare?'':(p.note?`<p class="note"><b>응답 코멘트</b>${esc(p.note)}</p>`:'')}</div></li>`;
 }
 function header(){
   const titles={personal:'개인 기도',intercession:'중보기도',archive:'응답 보관함',history:'개인 기도의 역사',trash:'휴지통',prefs:'설정'};
@@ -486,9 +488,9 @@ function histList(items){
     else if(!p.deletedAt) m+=` · 기도 중 ${days(p.createdAt,Date.now())+1}일째`;
     if(p.deletedAt) m+=` → ${fmt(p.deletedAt)} <span class="chip s-DEL">삭제</span>`;
     if(p.cat) m+=` <span class="tag">${esc(p.cat)}</span>`;
-    const eds=[...(p.statusLog||[]).map(e=>({at:e.changedAt,h:`<p class="ed">${fmt(e.at)} ${chip(e.status)} → ${fmt(e.changedAt)} ${e.to?chip(e.to):'기도 중'}</p>`})),
+    const eds=[...(p.statusLog||[]).map(e=>({at:e.changedAt,h:`<p class="ed">${fmt(e.at)} ${chip(e.status)} → ${fmt(e.changedAt)} ${e.to?chip(e.to):'기도 중'}${e.note?`<br>코멘트: ${esc(e.note)}`:''}</p>`})),
       ...(p.edits||[]).map(e=>({at:e.at,h:`<p class="ed">${fmt(e.at)} 수정 · 이전: <s>${esc(e.from)}</s></p>`}))].sort((a,b)=>a.at-b.at).map(x=>x.h).join('');
-    return `<li data-act="hist-edit" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.text)} 기록 편집"><span class="dot ${p.deletedAt?'del':p.status?'s-'+p.status:'open'}" aria-hidden="true"></span><div><div class="meta">${m}</div><p class="txt"${p.deletedAt?' style="color:var(--muted)"':''}>${esc(p.text)}</p>${eds}</div></li>`;}).join('')}</ol>`;
+    return `<li data-act="hist-edit" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.text)} 기록 편집"><span class="dot ${p.deletedAt?'del':p.status?'s-'+p.status:'open'}" aria-hidden="true"></span><div><div class="meta">${m}</div><p class="txt"${p.deletedAt?' style="color:var(--muted)"':''}>${esc(p.text)}</p>${p.note?`<p class="note"><b>응답 코멘트</b>${esc(p.note)}</p>`:''}${eds}</div></li>`;}).join('')}</ol>`;
 }
 function vPersonal(){
   const list=personalActive();
@@ -648,13 +650,13 @@ function renderDetail(){
   else meta.push(`<span>${days(p.createdAt,Date.now())+1}일째 기도 중</span>`);
   const ans=Object.keys(LABEL).map(k=>`<button class="s-${k}" data-act="answer" data-s="${k}" data-id="${p.id}" aria-pressed="${p.status===k}">${LABEL[k]}</button>`).join('');
   const ev=[{at:p.createdAt,h:`<span>${fmt(p.createdAt)}</span><b>등록</b>`}]
-    .concat((p.statusLog||[]).map(e=>({at:e.changedAt,h:`<span>${fmt(e.changedAt)}</span><b>${LABEL[e.status]} → ${e.to?LABEL[e.to]:'기도 중'}</b>`})))
+    .concat((p.statusLog||[]).map(e=>({at:e.changedAt,h:`<span>${fmt(e.changedAt)}</span><b>${LABEL[e.status]} → ${e.to?LABEL[e.to]:'기도 중'}${e.note?` · ${esc(e.note)}`:''}</b>`})))
     .concat((p.edits||[]).map(e=>({at:e.at,h:`<span>${fmt(e.at)} 수정</span><b>이전: ${esc(e.from)}</b>`})))
-    .concat(p.status?[{at:p.statusAt,h:`<span>${fmt(p.statusAt)}</span><b>${LABEL[p.status]}</b>`}]:[])
+    .concat(p.status?[{at:p.statusAt,h:`<span>${fmt(p.statusAt)}</span><b>${LABEL[p.status]}${p.note?` · ${esc(p.note)}`:''}</b>`}]:[])
     .concat(p.deletedAt?[{at:p.deletedAt,h:`<span>${fmt(p.deletedAt)}</span><b>삭제</b>`}]:[])
     .sort((a,b)=>a.at-b.at).map(x=>`<div class="dev">${x.h}</div>`).join('');
   el.innerHTML=`<div class="dmeta">${meta.join('')}</div><h2>${esc(p.text)}</h2>
-    ${p.deletedAt?'':`<div style="display:flex;flex-direction:column;gap:8px"><span class="dlabel">응답</span><div class="dans">${ans}</div>${isAns(p)?`<div><button class="btn ghost" data-act="unanswer" data-id="${p.id}">기도 중으로 되돌리기</button></div>`:''}</div>
+    ${p.deletedAt?'':`<div style="display:flex;flex-direction:column;gap:8px"><span class="dlabel">응답</span><div class="dans">${ans}</div>${p.status?`${p.note?`<p class="note" style="margin:0"><b>응답 코멘트</b>${esc(p.note)}</p>`:''}<div class="row-btns"><button class="btn ghost" data-act="note" data-id="${p.id}">${p.note?'코멘트 수정':'+ 응답 코멘트'}</button>${isAns(p)?`<button class="btn ghost" data-act="unanswer" data-id="${p.id}">기도 중으로 되돌리기</button>`:''}</div>`:''}</div>
     <div class="row-btns"><button class="btn ghost" data-act="edit" data-id="${p.id}">수정</button><button class="btn danger" data-act="del-ask" data-id="${p.id}">삭제</button></div>`}
     <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;align-items:center"><span class="dlabel">이 기도의 역사</span><button class="link" data-act="hist-edit" data-id="${p.id}">역사 편집</button></div>${ev}</div>`;
 }
@@ -666,12 +668,13 @@ function drawer(){
   document.body.append(d);overlay.push(d);d.querySelector('button').focus();
 }
 let toastT=null;
-function toast(msg,undo){
+function toast(msg,undo,extra){
   const old=$('.toast');old&&old.remove();clearTimeout(toastT);
   const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');
-  t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button>되돌리기</button>':''}`;
-  if(undo) t.querySelector('button').onclick=()=>{undo();t.remove();};
-  document.body.append(t);toastT=setTimeout(()=>t.remove(),4500);
+  t.innerHTML=`<span>${esc(msg)}</span>${extra?`<button data-x>${esc(extra.label)}</button>`:''}${undo?'<button data-u>되돌리기</button>':''}`;
+  if(undo) t.querySelector('[data-u]').onclick=()=>{undo();t.remove();};
+  if(extra) t.querySelector('[data-x]').onclick=()=>{t.remove();extra.fn();};
+  document.body.append(t);toastT=setTimeout(()=>t.remove(),extra?7000:4500);
 }
 
 /* ---------- mutations ---------- */
@@ -679,15 +682,17 @@ const P=id=>db.prayers.find(p=>p.id===id);
 function commit(){save();render();}
 function addPrayer(text,personId){text=text.trim();if(!text)return;db.prayers.push({id:uid(),text,createdAt:Date.now(),personId:personId||null,status:null,statusAt:null,deletedAt:null});commit();}
 function setStatus(id,next,log){
-  const p=P(id),prev={status:p.status,statusAt:p.statusAt,statusLog:p.statusLog};
-  if(log&&p.status&&p.status!==next) p.statusLog=(p.statusLog||[]).concat({status:p.status,at:p.statusAt,changedAt:Date.now(),to:next});
+  const p=P(id),prev={status:p.status,statusAt:p.statusAt,statusLog:p.statusLog,note:p.note};
+  if(log&&p.status&&p.status!==next) p.statusLog=(p.statusLog||[]).concat(Object.assign({status:p.status,at:p.statusAt,changedAt:Date.now(),to:next},p.note?{note:p.note}:{}));
+  if(p.status!==next) delete p.note;
   p.status=next;p.statusAt=next?Date.now():null;
   commit();
-  const undo=()=>{Object.assign(p,prev);if(!prev.statusLog)delete p.statusLog;commit();};
+  const undo=()=>{Object.assign(p,prev);if(!prev.statusLog)delete p.statusLog;if(!prev.note)delete p.note;commit();};
+  const cm=next?{label:'코멘트 달기',fn:()=>noteSheet(id)}:null;
   const tail=log&&prev.status?' · 역사에 기록했어요':'';
-  if(ANSWERED.has(next)&&!ANSWERED.has(prev.status)) toast(`${LABEL[next]} · 응답 보관함으로 옮겼어요${tail}`,undo);
+  if(ANSWERED.has(next)&&!ANSWERED.has(prev.status)) toast(`${LABEL[next]} · 응답 보관함으로 옮겼어요${tail}`,undo,cm);
   else if(!next) toast(`기도 중으로 되돌렸어요${tail}`,undo);
-  else toast(`응답을 바꿨어요 (${prev.status?LABEL[prev.status]+' → ':''}${LABEL[next]})${tail}`,undo);
+  else toast(`응답을 바꿨어요 (${prev.status?LABEL[prev.status]+' → ':''}${LABEL[next]})${tail}`,undo,cm);
 }
 function askStatusLog(btn,id,next){
   let m=btn.closest('.menu');if(!m){menu(btn,'');m=document.querySelector('.menu');}
@@ -698,12 +703,20 @@ function askStatusLog(btn,id,next){
 function delPrayer(id,log){const p=P(id);p.deletedAt=Date.now();p.delLogged=!!log;commit();toast(log?'휴지통으로 옮기고 역사에 기록했어요':'휴지통으로 옮겼어요',()=>{p.deletedAt=null;p.delLogged=false;commit();});}
 function delPerson(id){const p=person(id);p.deletedAt=Date.now();save();go('intercession');toast(`${p.name}을(를) 휴지통으로 옮겼어요`,()=>{p.deletedAt=null;commit();});}
 
+function noteSheet(id){
+  const p=P(id);if(!p||!p.status)return;
+  sheet(`<h2>응답 코멘트 <span class="chip s-${p.status}" style="vertical-align:middle">${LABEL[p.status]}</span></h2><p class="hint" style="margin:0;overflow-wrap:anywhere">${esc(p.text)}</p>
+  <label class="sr" for="note-text">응답 코멘트</label><textarea id="note-text" data-grow placeholder="어떻게 응답하셨는지 적어 두세요 (선택)">${esc(p.note||'')}</textarea>
+  <div class="row-btns"><button class="btn">저장</button>${p.note?'<button type="button" class="btn danger" data-act="note-del" data-id="'+id+'">코멘트 지우기</button>':''}<button type="button" class="btn ghost" data-act="close">취소</button></div>`,
+  f=>{const v=f.querySelector('textarea').value.trim();closeAll();if(v)p.note=v;else delete p.note;commit();toast(v?'코멘트를 남겼어요':'코멘트를 지웠어요');});
+}
 function prayerMenu(btn,id){
   const p=P(id);
   const ans=Object.keys(LABEL).map(k=>`<button class="s-${k}" data-act="answer" data-s="${k}" data-id="${id}" aria-pressed="${p.status===k}">${LABEL[k]}</button>`).join('');
-  const body=isAns(p)
+  const nb=p.status?`<button class="mi" data-act="note" data-id="${id}">${p.note?'응답 코멘트 수정':'응답 코멘트 달기'}</button>`:'';
+  const body=nb+(isAns(p)
     ?`<button class="mi" data-act="edit" data-id="${id}">수정</button><div class="lbl">응답 바꾸기</div><div class="answers">${ans}</div><button class="mi" data-act="unanswer" data-id="${id}">기도 중으로 되돌리기</button>`
-    :`<button class="mi" data-act="edit" data-id="${id}">수정</button><div class="lbl">응답</div><div class="answers">${ans}</div>`;
+    :`<button class="mi" data-act="edit" data-id="${id}">수정</button><div class="lbl">응답</div><div class="answers">${ans}</div>`);
   menu(btn,body+`<button class="mi danger" data-act="del-ask" data-id="${id}">삭제</button>`);
 }
 function catPicker(cur){
@@ -733,7 +746,8 @@ function histSheet(id){
   <div class="field"><label class="hint" for="hs-text">기도제목</label><textarea id="hs-text" data-grow required>${esc(p.text)}</textarea></div>
   <div class="field"><label class="hint" for="hs-created">등록일</label><input type="date" id="hs-created" value="${toDate(p.createdAt)}" required></div>
   <div class="field"><span class="hint">응답</span><div class="pick" role="radiogroup" aria-label="응답">${opts.map(([v,l])=>`<label><input type="radio" name="hs-st" id="hs-st-${v||'none'}" value="${v}" ${st===v?'checked':''}>${l}</label>`).join('')}</div>
-  <label class="hint" for="hs-stat">응답일 (응답을 고른 경우)</label><input type="date" id="hs-stat" value="${toDate(p.statusAt||Date.now())}"></div>
+  <label class="hint" for="hs-stat">응답일 (응답을 고른 경우)</label><input type="date" id="hs-stat" value="${toDate(p.statusAt||Date.now())}">
+  <label class="hint" for="hs-note">응답 코멘트 (선택)</label><textarea id="hs-note" data-grow style="min-height:60px">${esc(p.note||'')}</textarea></div>
   ${p.deletedAt?`<div class="field"><label class="hint" for="hs-del">삭제일</label><input type="date" id="hs-del" value="${toDate(p.deletedAt)}"></div>`:''}
   ${sls?`<div class="field"><span class="hint">응답 변경 기록</span><div>${sls}</div></div>`:''}
   ${eds?`<div class="field"><span class="hint">수정 기록</span><div>${eds}</div></div>`:''}
@@ -742,7 +756,7 @@ function histSheet(id){
   f=>{const v=f.querySelector('#hs-text').value.trim();if(!v)return;
     p.text=v;p.createdAt=fromDate(f.querySelector('#hs-created').value,p.createdAt);
     const ns=(f.querySelector('input[name=hs-st]:checked')||{}).value||null;
-    p.statusAt=ns?fromDate(f.querySelector('#hs-stat').value,p.statusAt||Date.now()):null;p.status=ns;
+    p.statusAt=ns?fromDate(f.querySelector('#hs-stat').value,p.statusAt||Date.now()):null;p.status=ns;{const nv=f.querySelector('#hs-note').value.trim();if(ns&&nv)p.note=nv;else delete p.note;}
     const dl=f.querySelector('#hs-del');if(dl&&p.deletedAt)p.deletedAt=fromDate(dl.value,p.deletedAt);
     if(p.statusLog)p.statusLog=[...f.querySelectorAll('[data-si]')].map(r=>{const e=p.statusLog[+r.dataset.si];return Object.assign({},e,{changedAt:fromDate(r.querySelector('input').value,e.changedAt)});}).sort((a,b)=>a.changedAt-b.changedAt);
     if(p.edits)p.edits=[...f.querySelectorAll('[data-ei]')].map(r=>{const e=p.edits[+r.dataset.ei];return{at:fromDate(r.querySelector('input').value,e.at),from:e.from};}).sort((a,b)=>a.at-b.at);
@@ -857,6 +871,8 @@ document.addEventListener('click',e=>{
     case 'edit':closeRow();editSheet(id);break;
     case 'del':closeAll();closeRow();delPrayer(id,b.dataset.log==='1');break;
     case 'close':closeAll();break;
+    case 'note':closeRow();noteSheet(id);break;
+    case 'note-del':{const p=P(id);closeAll();delete p.note;commit();toast('코멘트를 지웠어요');break;}
     case 'sign-out':CLOUD.sb&&CLOUD.sb.auth.signOut();break;
     case 'supa-save':{db.settings.supaUrl=$('#supa-url').value.trim();db.settings.supaKey=$('#supa-key').value.trim();saveLocal();stopCloud();cloudInit();toast('연결 정보를 저장했어요');break;}
     case 'hist-edit':histSheet(b.dataset.id);break;
