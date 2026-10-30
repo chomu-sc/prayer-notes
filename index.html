@@ -8,19 +8,19 @@
   --bg:#F4F5F8; --surface:#FFFFFF; --surface-2:#ECEFF4; --line:#E3E6EC;
   --fg:#1A2030; --muted:#566074; --accent:#2F4A8A; --on-accent:#FFFFFF;
   --o:#1F6B4F; --x:#A33A2A; --wait:#8A5A00; --his:#4B3D8F; --on-status:#FFFFFF;
-  --danger:#A33A2A; --shadow:0 10px 30px rgba(20,30,50,.18); --scrim:rgba(16,21,31,.38);
+  --danger:#A33A2A; --sel:#EEF2FA; --shadow:0 10px 30px rgba(20,30,50,.18); --scrim:rgba(16,21,31,.38);
   --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E0E0E; --surface:#1B1B1B; --surface-2:#2A2A2A; --line:#333333;
   --fg:#EDEDED; --muted:#A3A3A3; --accent:#C9CCD3; --on-accent:#111111;
   --o:#5DB48C; --x:#E58572; --wait:#DDAA4B; --his:#AA9BEA; --on-status:#111111;
-  --danger:#E58572; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}}
+  --danger:#E58572; --sel:#262626; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E0E0E; --surface:#1B1B1B; --surface-2:#2A2A2A; --line:#333333;
   --fg:#EDEDED; --muted:#A3A3A3; --accent:#C9CCD3; --on-accent:#111111;
   --o:#5DB48C; --x:#E58572; --wait:#DDAA4B; --his:#AA9BEA; --on-status:#111111;
-  --danger:#E58572; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}
+  --danger:#E58572; --sel:#262626; --shadow:0 10px 30px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.55); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{font-size:16px;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
@@ -115,7 +115,7 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
 .drawer button[aria-current="page"]{background:var(--surface-2);font-weight:700}
 .drawer small{color:var(--muted);font-variant-numeric:tabular-nums}
 .drawer hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
-.toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(152px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);border-radius:12px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:8px;font-size:.88rem;max-width:calc(100vw - 32px);box-shadow:var(--shadow)}
+.toast{width:max-content;position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(152px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);border-radius:12px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:8px;font-size:.88rem;max-width:calc(100vw - 32px);box-shadow:var(--shadow)}
 .toast button{white-space:nowrap;flex:none;border:0;background:transparent;color:inherit;font-weight:700;height:36px;padding:0 10px;text-decoration:underline}
 .bh{display:flex;align-items:center;justify-content:space-between;padding-right:6px}
 .pin{width:40px;height:40px;border:0;border-radius:20px;background:transparent;color:var(--muted);display:grid;place-items:center}
@@ -150,13 +150,54 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
 .sync{font-size:.75rem;color:var(--muted);padding:4px 12px;display:flex;align-items:center;gap:6px}
 .sync i{width:8px;height:8px;border-radius:4px;background:var(--muted);display:inline-block}
 .sync i.on{background:var(--o)}.sync i.err{background:var(--x)}
+.side,.detail,.desk{display:none}
+.sw.sel .sw-body{background:var(--sel)}
+.sw.sel .sw-body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.side nav{display:flex;flex-direction:column;gap:2px;height:100%}
+.side .brand{font-size:.95rem;font-weight:700;padding:0 12px 14px}
+.side button{height:40px;border:0;border-radius:8px;background:transparent;text-align:left;padding:0 12px;font-size:.92rem;display:flex;justify-content:space-between;align-items:center;color:var(--fg)}
+.side button:hover{background:var(--surface-2)}
+.side button[aria-current="page"]{background:var(--surface);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.side small{color:var(--muted);font-variant-numeric:tabular-nums}
+.side hr{border:0;border-top:1px solid var(--line);margin:8px 4px;width:calc(100% - 8px)}
+.detail .empty{margin-top:30vh}
+.dmeta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.8rem;color:var(--muted)}
+.detail h2{margin:0;font-size:1.35rem;line-height:1.5;text-wrap:balance;overflow-wrap:anywhere}
+.dlabel{font-size:.78rem;font-weight:700;color:var(--muted)}
+.dans{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;gap:6px}
+.dans button{height:40px;border:0;border-radius:8px;font-size:.85rem;font-weight:700;color:var(--on-status)}
+.dans button[aria-pressed="true"]{outline:2px solid var(--fg);outline-offset:2px}
+.dev{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.dev b{font-weight:400;color:var(--fg);overflow-wrap:anywhere}
+@media (min-width:1000px){
+  body{padding:0}
+  .app{max-width:none;display:grid;grid-template-columns:232px minmax(0,560px) minmax(0,1fr);min-height:100vh}
+  .app.nodetail{grid-template-columns:232px minmax(0,1fr)}
+  .app.nodetail .col{max-width:820px}
+  .side{display:block;position:sticky;top:0;height:100vh;box-sizing:border-box;padding:52px 12px 16px;border-right:1px solid var(--line);background:var(--bg);overflow:auto}
+  .col{padding:0 20px 40px;border-right:1px solid var(--line);min-width:0}
+  .app.nodetail .col{border-right:0}
+  header.top{padding-top:40px}
+  header.top [data-act="drawer"]{display:none}
+  .desk{display:inline-flex;align-items:center;justify-content:center}
+  .detail{display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;box-sizing:border-box;overflow:auto;padding:44px 28px 28px;background:var(--surface)}
+  .app.nodetail .detail{display:none}
+  nav.tabs,#fab{display:none!important}
+  .sheet{bottom:auto;top:50%;transform:translateY(-50%);border-radius:16px;max-width:560px;max-height:85vh}
+  .toast{bottom:24px}
+  .sw-body{cursor:pointer}
+}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion: reduce){.sw-body{transition:none}}
 </style>
 
-<div class="app">
-  <header class="top" id="top"></header>
-  <main id="view" aria-live="polite"></main>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="전체 메뉴"></aside>
+  <div class="col">
+    <header class="top" id="top"></header>
+    <main id="view" aria-live="polite"></main>
+  </div>
+  <section class="detail" id="detail" aria-label="자세히 보기"></section>
 </div>
 <button class="fab" id="fab" data-act="fab" aria-label="추가"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav class="tabs" id="tabs" aria-label="섹션">
@@ -431,6 +472,7 @@ function header(){
   let right='';
   if(S.view==='personal') right=`<button class="link" data-act="to-archive" data-a="personal">응답 보관함 ${archive().filter(p=>!p.personId).length}</button>`;
   if(S.view==='intercession') right=`<button class="link" data-act="to-archive" data-a="inter">응답 보관함 ${archive().filter(p=>p.personId).length}</button>`;
+  if(S.view==='personal'||S.view==='intercession') right+=`<button class="btn desk" style="height:36px;font-size:.82rem;margin-left:8px" data-act="fab">${S.view==='personal'?'+ 새 기도제목':'+ 추가 ▾'}</button>`;
   return `<button class="ib" data-act="drawer" aria-label="전체 메뉴">${ICON.menu}</button><h1>${titles[S.view]}</h1>${right}`;
 }
 function histList(items){
@@ -551,6 +593,7 @@ function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.toggleAttribute('aria-current',false)||b.dataset.go===tab&&b.setAttribute('aria-current','page'));
   $('#fab').hidden=!['personal','intercession','person'].includes(S.view);
   $('#fab').setAttribute('aria-label',S.view==='intercession'?'사람 추가 또는 찾기':'기도제목 추가');
+  renderSide();renderDetail();
   document.title='기도제목 노트';
 }
 
@@ -578,12 +621,46 @@ function sheet(html,onSubmit){
   const f=s.querySelector('textarea,input');f&&setTimeout(()=>f.focus(),30);
   return s;
 }
+function navItems(){
+  const cur=S.view==='person'?'intercession':S.view;
+  const it=(v,l,c)=>`<button data-go="${v}" ${cur===v?'aria-current="page"':''}>${l}${c!=null?`<small>${c}</small>`:''}</button>`;
+  return `${it('personal','개인 기도',personalActive().length)}${it('intercession','중보기도',alivePeople().length+'명')}<hr>${it('archive','응답 보관함',archive().length)}${it('history','개인 기도의 역사',personalHist().length)}${it('trash','휴지통',trashed().length)}<hr>${it('prefs','설정')}<div style="margin-top:auto">${syncLine(true)}</div>`;
+}
+const isDesk=()=>matchMedia('(min-width:1000px)').matches;
+const DETAIL_VIEWS=['personal','intercession','person','archive','history'];
+function renderSide(){$('#side').innerHTML=`<nav><span class="brand">기도제목 노트</span>${navItems()}</nav>`;}
+function renderDetail(){
+  const app=$('#app'),el=$('#detail');
+  app.classList.toggle('nodetail',!DETAIL_VIEWS.includes(S.view));
+  document.querySelectorAll('.sw.sel').forEach(r=>r.classList.remove('sel'));
+  const p=S.sel&&P(S.sel);
+  if(!p||(p.deletedAt&&!p.delLogged)){el.innerHTML=`<p class="empty">기도제목을 누르면<br>여기에 자세한 내용이 보여요.</p>`;return;}
+  document.querySelectorAll(`.sw[data-id="${p.id}"]`).forEach(r=>r.classList.add('sel'));
+  const pp=p.personId&&person(p.personId);
+  let meta=[];
+  if(pp) meta.push(`<button class="link" style="padding:0" data-act="open-person" data-pid="${pp.id}">${esc(pp.name)} ›</button>`);
+  if(p.cat) meta.push(`<span class="tag">${esc(p.cat)}</span>`);
+  meta.push(`<span>${fmt(p.createdAt)} 등록</span>`);
+  if(p.deletedAt) meta.push(`<span class="chip s-DEL">삭제됨</span>`);
+  else if(isAns(p)) meta.push(chip(p.status)+`<span>${fmt(p.statusAt)} 응답 · ${days(p.createdAt,p.statusAt)}일 만에</span>`);
+  else meta.push(`<span>${days(p.createdAt,Date.now())+1}일째 기도 중</span>`);
+  const ans=Object.keys(LABEL).map(k=>`<button class="s-${k}" data-act="answer" data-s="${k}" data-id="${p.id}" aria-pressed="${p.status===k}">${LABEL[k]}</button>`).join('');
+  const ev=[{at:p.createdAt,h:`<span>${fmt(p.createdAt)}</span><b>등록</b>`}]
+    .concat((p.statusLog||[]).map(e=>({at:e.changedAt,h:`<span>${fmt(e.changedAt)}</span><b>${LABEL[e.status]} → ${e.to?LABEL[e.to]:'기도 중'}</b>`})))
+    .concat((p.edits||[]).map(e=>({at:e.at,h:`<span>${fmt(e.at)} 수정</span><b>이전: ${esc(e.from)}</b>`})))
+    .concat(p.status?[{at:p.statusAt,h:`<span>${fmt(p.statusAt)}</span><b>${LABEL[p.status]}</b>`}]:[])
+    .concat(p.deletedAt?[{at:p.deletedAt,h:`<span>${fmt(p.deletedAt)}</span><b>삭제</b>`}]:[])
+    .sort((a,b)=>a.at-b.at).map(x=>`<div class="dev">${x.h}</div>`).join('');
+  el.innerHTML=`<div class="dmeta">${meta.join('')}</div><h2>${esc(p.text)}</h2>
+    ${p.deletedAt?'':`<div style="display:flex;flex-direction:column;gap:8px"><span class="dlabel">응답</span><div class="dans">${ans}</div>${isAns(p)?`<div><button class="btn ghost" data-act="unanswer" data-id="${p.id}">기도 중으로 되돌리기</button></div>`:''}</div>
+    <div class="row-btns"><button class="btn ghost" data-act="edit" data-id="${p.id}">수정</button><button class="btn danger" data-act="del-ask" data-id="${p.id}">삭제</button></div>`}
+    <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;align-items:center"><span class="dlabel">이 기도의 역사</span><button class="link" data-act="hist-edit" data-id="${p.id}">역사 편집</button></div>${ev}</div>`;
+}
+matchMedia('(min-width:1000px)').addEventListener('change',()=>{closeAll();render();});
 function drawer(){
   closeAll();scrim(true);
   const d=document.createElement('nav');d.className='drawer';d.setAttribute('aria-label','전체 메뉴');
-  const cur=S.view==='person'?'intercession':S.view;
-  const it=(v,l,c)=>`<button data-go="${v}" ${cur===v?'aria-current="page"':''}>${l}${c!=null?`<small>${c}</small>`:''}</button>`;
-  d.innerHTML=`<h2>기도제목 노트</h2>${it('personal','개인 기도',personalActive().length)}${it('intercession','중보기도',alivePeople().length+'명')}<hr>${it('archive','응답 보관함',archive().length)}${it('history','개인 기도의 역사',personalHist().length)}${it('trash','휴지통',trashed().length)}<hr>${it('prefs','설정')}<div style="margin-top:auto">${syncLine(true)}</div>`;
+  d.innerHTML=`<h2>기도제목 노트</h2>`+navItems();
   document.body.append(d);overlay.push(d);d.querySelector('button').focus();
 }
 let toastT=null;
@@ -611,7 +688,7 @@ function setStatus(id,next,log){
   else toast(`응답을 바꿨어요 (${prev.status?LABEL[prev.status]+' → ':''}${LABEL[next]})${tail}`,undo);
 }
 function askStatusLog(btn,id,next){
-  const m=btn.closest('.menu');
+  let m=btn.closest('.menu');if(!m){menu(btn,'');m=document.querySelector('.menu');}
   const what=next?`${LABEL[P(id).status]} → ${LABEL[next]}`:`${LABEL[P(id).status]} → 기도 중`;
   m.innerHTML=`<div class="lbl">응답이 바뀌었어요 (${what}). 기도의 역사에 남길까요?</div><button class="mi" data-act="answer-do" data-s="${next||''}" data-log="1" data-id="${id}">기록 남기고 바꾸기</button><button class="mi" data-act="answer-do" data-s="${next||''}" data-log="0" data-id="${id}">기록 없이 바꾸기</button><button class="mi" data-act="close" style="border-top:1px solid var(--line)">취소</button>`;
   m.querySelector('button').focus();
@@ -763,7 +840,10 @@ document.addEventListener('click',e=>{
   if(suppress){e.preventDefault();return;}
   const g=e.target.closest('[data-go]');if(g){closeAll();go(g.dataset.go);return;}
   const b=e.target.closest('[data-act]');
-  if(!b){const body=e.target.closest('.sw.open .sw-body');if(body)closeRow();return;}
+  if(!b){const body=e.target.closest('.sw.open .sw-body');if(body){closeRow();return;}
+    const sb=e.target.closest('.sw-body');const li=sb&&sb.closest('.sw[data-id]');
+    if(li&&isDesk()&&li.querySelector('.sw-act')){S.sel=li.dataset.id;renderDetail();}
+    return;}
   const id=b.dataset.id||(b.closest('.sw')&&b.closest('.sw').dataset.id);
   switch(b.dataset.act){
     case 'more':prayerMenu(b,id);break;
@@ -786,7 +866,7 @@ document.addEventListener('click',e=>{
     case 'fab':
       if(S.view==='personal')addSheet();
       else if(S.view==='person'){const i=$('#person-add-input');i&&i.focus();}
-      else menu($('#fab'),`<button class="mi" data-act="find-person">사람 찾아서 기도제목 추가</button><button class="mi" data-act="new-person" style="border-top:1px solid var(--line)">새 사람 추가</button>`);
+      else menu(b,`<button class="mi" data-act="find-person">사람 찾아서 기도제목 추가</button><button class="mi" data-act="new-person" style="border-top:1px solid var(--line)">새 사람 추가</button>`);
       break;
     case 'find-person':findSheet();break;
     case 'new-person':newPersonSheet(b.dataset.name);break;
@@ -803,7 +883,7 @@ document.addEventListener('click',e=>{
     case 'cat':S.cat=b.dataset.c;render();break;
     case 'hcat':S.hcat=b.dataset.c;render();break;
     case 'group':db.settings.groupByCat=!db.settings.groupByCat;commit();break;
-    case 'del-ask':{const m=b.closest('.menu');m.innerHTML=`<div class="lbl">기도의 역사에 삭제 기록을 남길까요?</div><button class="mi" data-act="del" data-log="1" data-id="${id}">기록 남기고 삭제</button><button class="mi" data-act="del" data-log="0" data-id="${id}">기록 없이 삭제</button><button class="mi" data-act="close" style="border-top:1px solid var(--line)">취소</button>`;m.querySelector('button').focus();break;}
+    case 'del-ask':{let m=b.closest('.menu');if(!m){menu(b,'');m=document.querySelector('.menu');}m.innerHTML=`<div class="lbl">기도의 역사에 삭제 기록을 남길까요?</div><button class="mi" data-act="del" data-log="1" data-id="${id}">기록 남기고 삭제</button><button class="mi" data-act="del" data-log="0" data-id="${id}">기록 없이 삭제</button><button class="mi" data-act="close" style="border-top:1px solid var(--line)">취소</button>`;m.querySelector('button').focus();break;}
     case 'cat-add':{const i=$('#cat-new');const v=i.value.trim();if(v&&!db.cats.includes(v)){db.cats.push(v);commit();toast(`'${v}' 분야를 추가했어요`);}break;}
     case 'cat-rename':catRenameSheet(b.dataset.c);break;
     case 'cat-del':armed(b,'한 번 더',()=>{const c=b.dataset.c;db.cats=db.cats.filter(x=>x!==c);db.prayers.forEach(p=>{if(p.cat===c)p.cat=null;});commit();toast(`'${c}' 분야를 지웠어요`);});break;
