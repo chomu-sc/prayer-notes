@@ -191,6 +191,13 @@ textarea{box-sizing:border-box;max-height:60vh;overflow-y:auto;width:100%;min-he
 }
 .note{margin:6px 0 0;padding:8px 10px;border-radius:8px;background:var(--surface-2);font-size:.85rem;line-height:1.55;color:var(--fg);white-space:pre-wrap;overflow-wrap:anywhere}
 .note b{display:block;font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:2px}
+.psearch{display:flex;gap:8px;margin-bottom:10px}
+.psearch label{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--muted)}
+.psearch input{flex:1;min-width:0;border:0;background:transparent;outline:none;height:100%}
+.psearch label:focus-within{border-color:var(--accent)}
+.psearch .btn{height:44px;flex:none}
+section.box[data-pid]{cursor:pointer}
+section.box[data-pid]:hover{box-shadow:0 0 0 1px var(--line)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion: reduce){.sw-body{transition:none}}
 </style>
@@ -476,7 +483,7 @@ function header(){
   let right='';
   if(S.view==='personal') right=`<button class="link" data-act="to-archive" data-a="personal">응답 보관함 ${archive().filter(p=>!p.personId).length}</button>`;
   if(S.view==='intercession') right=`<button class="link" data-act="to-archive" data-a="inter">응답 보관함 ${archive().filter(p=>p.personId).length}</button>`;
-  if(S.view==='personal'||S.view==='intercession') right+=`<button class="btn desk" style="height:36px;font-size:.82rem;margin-left:8px" data-act="fab">${S.view==='personal'?'+ 새 기도제목':'+ 추가 ▾'}</button>`;
+  if(S.view==='personal') right+=`<button class="btn desk" style="height:36px;font-size:.82rem;margin-left:8px" data-act="fab">${S.view==='personal'?'+ 새 기도제목':'+ 추가 ▾'}</button>`;
   return `<button class="ib" data-act="drawer" aria-label="전체 메뉴">${ICON.menu}</button><h1>${titles[S.view]}</h1>${right}`;
 }
 function histList(items){
@@ -513,15 +520,16 @@ function vPersonal(){
 }
 function vInter(){
   const ppl=alivePeople();
-  if(!ppl.length) return `<div class="list"><p class="empty">아직 함께 기도할 사람이 없어요.<br>+ 버튼으로 사람을 추가해 보세요.</p></div>`;
+  const top=`<div class="psearch" role="search"><label for="p-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span class="sr">사람 검색</span><input id="p-search" type="search" placeholder="사람 검색" autocomplete="off" value="${esc(S.pq||'')}"></label><button class="btn" data-act="new-person-q">+ 새 사람</button></div>`;
+  if(!ppl.length) return top+`<div class="list"><p class="empty">아직 함께 기도할 사람이 없어요.<br>'+ 새 사람'으로 추가해 보세요.</p></div>`;
   const k=db.settings.peopleSort, up=db.settings.peopleDir==='asc';
   const sw='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>';
   const dl=k==='date'?(up?'오래된순':'최신순'):'최신순', al=k==='abc'?(up?'가나다순':'가나다 역순'):'가나다순';
   const bar=`<div class="sortbar" role="group" aria-label="사람 순서. 선택된 버튼을 다시 누르면 순서가 뒤집혀요"><button data-act="psort" data-k="date" aria-pressed="${k==='date'}">${dl}${k==='date'?sw:''}</button><button data-act="psort" data-k="abc" aria-pressed="${k==='abc'}">${al}${k==='abc'?sw:''}</button></div>`;
-  return bar+`<div class="stack">${ppl.map(pp=>{
+  return top+bar+`<p class="empty" id="p-none" hidden></p><div class="stack">${ppl.map(pp=>{
     const a=activeOf(pp.id);
-    return `<section class="box" aria-label="${esc(pp.name)}"><div class="bh"><button class="nm" data-act="open-person" data-pid="${pp.id}">${esc(pp.name)} ›</button><button class="pin" data-act="pin" data-pid="${pp.id}" aria-pressed="${!!pp.pinnedAt}" aria-label="${esc(pp.name)} ${pp.pinnedAt?'고정 해제':'맨 위에 고정'}">${pinIcon(!!pp.pinnedAt)}</button></div>
-    ${a.length?`<ul class="list">${a.map(p=>row(p,{bare:true})).join('')}</ul>`:`<p class="empty">기도 중인 제목이 없어요. 이름을 눌러 추가해요.</p>`}</section>`;}).join('')}</div>`;
+    return `<section class="box" data-pid="${pp.id}" data-name="${esc(pp.name)}" aria-label="${esc(pp.name)}"><div class="bh"><button class="nm" data-act="open-person" data-pid="${pp.id}">${esc(pp.name)} ›</button><button class="pin" data-act="pin" data-pid="${pp.id}" aria-pressed="${!!pp.pinnedAt}" aria-label="${esc(pp.name)} ${pp.pinnedAt?'고정 해제':'맨 위에 고정'}">${pinIcon(!!pp.pinnedAt)}</button></div>
+    ${a.length?`<ul class="list">${a.map(p=>row(p,{bare:true})).join('')}</ul>`:`<p class="empty">기도 중인 제목이 없어요. 눌러서 추가해요.</p>`}</section>`;}).join('')}</div>`;
 }
 function vPerson(){
   const pp=person(S.pid), a=activeOf(pp.id), hist=historyOf(pp.id);
@@ -588,6 +596,13 @@ function vPrefs(){
     <div><button class="btn" data-act="backup-import">백업 불러오기</button></div></div></section>
   ${hasExamples()?`<section class="group"><h2>예시</h2><p class="hint">처음에 보여드린 예시 사람과 기도제목을 모두 지워요.</p><div><button class="btn danger" data-act="clear-ex">예시 지우기</button></div></section>`:''}`;
 }
+function filterPeople(){
+  const q=(S.pq||'').trim(),boxes=[...document.querySelectorAll('section.box[data-pid]')];
+  let shown=0;boxes.forEach(b=>{const ok=!q||b.dataset.name.includes(q);b.hidden=!ok;if(ok)shown++;});
+  const none=$('#p-none');if(!none)return;
+  none.hidden=!(q&&!shown);
+  if(q&&!shown) none.innerHTML=`'${esc(q)}'(이)라는 사람이 없어요.<br><button class="link" data-act="new-person-q">+ '${esc(q)}' 새 사람으로 추가</button>`;
+}
 function render(){
   if(S.view==='person'&&!(person(S.pid)&&!person(S.pid).deletedAt)) S.view='intercession';
   $('#top').innerHTML=header();
@@ -595,8 +610,9 @@ function render(){
   $('#view').innerHTML=V();
   const tab=S.view==='person'?'intercession':S.view;
   document.querySelectorAll('#tabs button').forEach(b=>b.toggleAttribute('aria-current',false)||b.dataset.go===tab&&b.setAttribute('aria-current','page'));
-  $('#fab').hidden=!['personal','intercession','person'].includes(S.view);
+  $('#fab').hidden=!['personal','person'].includes(S.view);
   $('#fab').setAttribute('aria-label',S.view==='intercession'?'사람 추가 또는 찾기':'기도제목 추가');
+  if(S.view==='intercession')filterPeople();
   renderSide();renderDetail();
   document.title='기도제목 노트';
 }
@@ -857,6 +873,8 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){closeAll();go(g.dataset.go);return;}
   const b=e.target.closest('[data-act]');
   if(!b){const body=e.target.closest('.sw.open .sw-body');if(body){closeRow();return;}
+    const box=e.target.closest('section.box[data-pid]');
+    if(box&&!e.target.closest('input,textarea,a')){go('person',box.dataset.pid);return;}
     const sb=e.target.closest('.sw-body');const li=sb&&sb.closest('.sw[data-id]');
     if(li&&isDesk()&&li.querySelector('.sw-act')){S.sel=li.dataset.id;renderDetail();}
     return;}
@@ -871,6 +889,7 @@ document.addEventListener('click',e=>{
     case 'edit':closeRow();editSheet(id);break;
     case 'del':closeAll();closeRow();delPrayer(id,b.dataset.log==='1');break;
     case 'close':closeAll();break;
+    case 'new-person-q':newPersonSheet((S.pq||'').trim());break;
     case 'note':closeRow();noteSheet(id);break;
     case 'note-del':{const p=P(id);closeAll();delete p.note;commit();toast('코멘트를 지웠어요');break;}
     case 'sign-out':CLOUD.sb&&CLOUD.sb.auth.signOut();break;
@@ -957,7 +976,11 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','=','-',
 function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight+2,innerHeight*0.6)+'px';}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea[data-grow]'))grow(e.target);});
 new MutationObserver(()=>document.querySelectorAll('textarea[data-grow]').forEach(t=>{if(!t.dataset.g){t.dataset.g=1;grow(t);}})).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('input',e=>{if(e.target.id==='p-search'){S.pq=e.target.value;filterPeople();}});
 document.addEventListener('keydown',e=>{
+  if(e.target.id==='p-search'&&e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();
+    const vis=[...document.querySelectorAll('section.box[data-pid]:not([hidden])')];
+    if(vis.length===1)go('person',vis[0].dataset.pid);else if(!vis.length&&S.pq.trim())newPersonSheet(S.pq.trim());}
   if(e.target.id==='person-add-input'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();e.target.form.requestSubmit();}
 });
 load();applyPrefs();parseHash();render();cloudInit();
