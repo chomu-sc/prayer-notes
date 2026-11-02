@@ -149,9 +149,6 @@ textarea{box-sizing:border-box;max-height:60vh;overflow-y:auto;width:100%;min-he
 .tl li[data-act]{cursor:pointer;border-radius:8px}
 .tl li[data-act]:hover .txt{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
 .sheet input[type=date]{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 10px;width:100%}
-.sync{font-size:.75rem;color:var(--muted);padding:4px 12px;display:flex;align-items:center;gap:6px}
-.sync i{width:8px;height:8px;border-radius:4px;background:var(--muted);display:inline-block}
-.sync i.on{background:var(--o)}.sync i.err{background:var(--x)}
 .side,.detail,.desk{display:none}
 .sw.sel .sw-body{background:var(--sel)}
 .sw.sel .sw-body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
@@ -216,7 +213,6 @@ section.box[data-pid]:hover{box-shadow:0 0 0 1px var(--line)}
   <button data-go="intercession"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 19c.8-3.4 3.3-5 6-5s5.2 1.6 6 5M15 14.3c2.4-.3 4.6 1 5.4 4"/></svg>중보</button>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
 const KEY='prayer-notes-v1', DAY=864e5, W=72;
@@ -269,139 +265,12 @@ function load(){
   else if(ps==='old'){db.settings.peopleSort='date';db.settings.peopleDir='asc';}
   else if(ps==='abc'&&!db.settings.peopleDirSet){db.settings.peopleDir='asc';}
   db.settings.peopleDirSet=true;
+  delete db.settings.supaUrl;delete db.settings.supaKey;try{localStorage.removeItem('prayer-notes-auth');localStorage.removeItem('prayer-dev');}catch(e){}
   if(!Array.isArray(db.cats)) db.cats=['신앙','가정','진로','건강','관계'];
   purge();
 }
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
-function save(){saveLocal();if(CLOUD.on){clearTimeout(CLOUD.t);CLOUD.t=setTimeout(flush,400);}}
-/* ---------- sync through Supabase (each person's rows are private by row-level security) ---------- */
-const SUPA_URL='https://qrrpmybkapnppohadqkh.supabase.co', SUPA_KEY='sb_publishable_nsZWMcYt-MkEmjcHe9pbWg_Udl9TIwv';   // filled in at deploy time; the anon key is public by design
-const DEV=(()=>{try{let d=localStorage.getItem('prayer-dev');if(!d){d=uid();localStorage.setItem('prayer-dev',d);}return d;}catch(e){return uid();}})();
-const CLOUD={on:false,state:'local',maps:{prayer:new Map(),person:new Map()},sm:'',busy:false,dirty:false,t:null,last:null,email:'',msg:''};
-const KEYS={prayer:'prayers',person:'people'};
-const LOCAL_ONLY=['theme','font','supaUrl','supaKey'];
-const sortKeys=o=>Array.isArray(o)?o.map(sortKeys):o&&typeof o==='object'?Object.keys(o).sort().reduce((a,k)=>(a[k]=sortKeys(o[k]),a),{}):o;
-const J=o=>JSON.stringify(sortKeys(o));
-const strip=b=>{const o=Object.assign({},b);delete o._by;return o;};
-const syncMeta=()=>{const st={};for(const k in db.settings)if(!LOCAL_ONLY.includes(k))st[k]=db.settings[k];return J({cats:db.cats,settings:st});};
-const supaCfg=()=>({url:SUPA_URL||db.settings.supaUrl||'',key:SUPA_KEY||db.settings.supaKey||''});
-function applyMeta(md){
-  if(Array.isArray(md.cats))db.cats=md.cats.slice();
-  const st=Object.assign({},md.settings||{});LOCAL_ONLY.forEach(k=>delete st[k]);Object.assign(db.settings,st);
-}
-async function cloudInit(){
-  const c=supaCfg();
-  if(!c.url||!c.key){CLOUD.state='local';render();return;}
-  if(!window.supabase){CLOUD.state='err';CLOUD.msg='동기화 모듈을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';render();return;}
-  try{CLOUD.sb=supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'prayer-notes-auth'}});}
-  catch(e){CLOUD.state='err';CLOUD.msg='서버 주소나 키가 올바르지 않아요.';render();return;}
-  CLOUD.sb.auth.onAuthStateChange((ev,sess)=>{
-    if(sess&&!CLOUD.on&&!CLOUD.starting) setTimeout(()=>supaStart(sess),0);
-    if(ev==='SIGNED_OUT'){stopCloud();CLOUD.state='signedout';render();}
-  });
-  const {data}=await CLOUD.sb.auth.getSession();
-  if(!data.session&&!CLOUD.on){CLOUD.state='signedout';render();}
-}
-async function fetchAll(){
-  let rows=[],from=0;
-  for(;;){const {data,error}=await CLOUD.sb.from('prayer_items').select('kind,id,body').range(from,from+999);if(error)throw error;rows=rows.concat(data);if(data.length<1000)break;from+=1000;}
-  return rows;
-}
-async function supaStart(sess){
-  CLOUD.starting=true;
-  try{
-    const sb=CLOUD.sb,uid0=sess.user.id;CLOUD.uid=uid0;CLOUD.email=sess.user.email||'';
-    const rows=await fetchAll();
-    const rp=rows.filter(r=>r.kind==='prayer').map(r=>strip(r.body)),ru=rows.filter(r=>r.kind==='person').map(r=>strip(r.body)),m=rows.find(r=>r.kind==='meta');
-    CLOUD.be={
-      put:async(kind,list)=>{for(let i=0;i<list.length;i+=400){const {error}=await sb.from('prayer_items').upsert(list.slice(i,i+400).map(b=>({user_id:uid0,kind,id:b.id,body:b})),{onConflict:'user_id,kind,id'});if(error)throw error;}},
-      del:async(kind,ids)=>{const {error}=await sb.from('prayer_items').delete().eq('kind',kind).in('id',ids);if(error)throw error;},
-      watch:()=>{CLOUD.ch=sb.channel('prayer-'+uid0).on('postgres_changes',{event:'*',schema:'public',table:'prayer_items',filter:'user_id=eq.'+uid0},pl=>{
-        if(pl.eventType==='DELETE'){const o=pl.old||{};remoteDel(o.kind,o.id);}else{const n=pl.new||{};if(n.body&&n.body._by!==DEV)remoteSet(n.kind,n.id,strip(n.body));}
-      }).subscribe();}
-    };
-    const M=CLOUD.maps;M.prayer.clear();M.person.clear();CLOUD.sm='';
-    if(m){
-      const hp=new Set(rp.map(p=>p.id)),hu=new Set(ru.map(p=>p.id));
-      const lp=db.prayers.filter(p=>!p.ex&&!hp.has(p.id)),lu=db.people.filter(p=>!p.ex&&!hu.has(p.id));
-      rp.forEach(p=>M.prayer.set(p.id,J(p)));ru.forEach(p=>M.person.set(p.id,J(p)));
-      db.prayers=rp.concat(lp);db.people=ru.concat(lu);
-      const md=strip(m.body);applyMeta(md);CLOUD.sm=syncMeta();
-    }else{
-      db.prayers=db.prayers.filter(p=>!p.ex);const ex=new Set(db.people.filter(p=>p.ex).map(p=>p.id));
-      db.people=db.people.filter(p=>!p.ex);db.prayers=db.prayers.filter(p=>!ex.has(p.personId));
-    }
-    CLOUD.on=true;CLOUD.state='on';CLOUD.msg='';saveLocal();applyPrefs();render();
-    await flush();CLOUD.be.watch();
-  }catch(e){CLOUD.state='err';CLOUD.msg=String(e&&e.message||'').includes('prayer_items')?'서버에 표가 아직 없어요. 설정 SQL을 실행해 주세요.':'';render();}
-  finally{CLOUD.starting=false;}
-}
-function stopCloud(){
-  CLOUD.on=false;if(CLOUD.ch&&CLOUD.sb){CLOUD.sb.removeChannel(CLOUD.ch);CLOUD.ch=null;}
-  CLOUD.maps.prayer.clear();CLOUD.maps.person.clear();CLOUD.sm='';
-}
-function remoteSet(kind,id,body){
-  if(kind==='meta'){const before=CLOUD.sm;const md=Object.assign({},body);delete md.id;delete md.updatedAt;applyMeta(md);const now=syncMeta();if(now!==before){CLOUD.sm=now;saveLocal();render();}return;}
-  const map=CLOUD.maps[kind];if(!map)return;const j=J(body);if(map.get(id)===j)return;
-  map.set(id,j);const key=KEYS[kind],i=db[key].findIndex(x=>x.id===id);if(i>=0)db[key][i]=body;else db[key].push(body);
-  saveLocal();CLOUD.last=Date.now();render();
-}
-function remoteDel(kind,id){
-  const map=CLOUD.maps[kind];if(!map||!map.has(id))return;
-  map.delete(id);db[KEYS[kind]]=db[KEYS[kind]].filter(x=>x.id!==id);saveLocal();CLOUD.last=Date.now();render();
-}
-async function resync(){
-  if(!CLOUD.on||CLOUD.busy)return;
-  try{
-    const rows=await fetchAll(),seen={prayer:new Set(),person:new Set()};
-    for(const r of rows){if(seen[r.kind])seen[r.kind].add(r.id);if(r.body&&r.body._by!==DEV)remoteSet(r.kind,r.id,strip(r.body));}
-    for(const k of ['prayer','person'])for(const id of [...CLOUD.maps[k].keys()])if(!seen[k].has(id))remoteDel(k,id);
-    await flush();
-  }catch(e){}
-}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resync();});
-window.addEventListener('online',resync);
-async function flush(){
-  if(!CLOUD.on)return;if(CLOUD.busy){CLOUD.dirty=true;return;}
-  CLOUD.busy=true;
-  try{
-    do{
-      CLOUD.dirty=false;
-      for(const kind of ['prayer','person']){
-        const map=CLOUD.maps[kind],cur=new Map(db[KEYS[kind]].map(x=>[x.id,J(x)]));
-        const ch=[...cur].filter(([id,j])=>map.get(id)!==j);
-        if(ch.length){await CLOUD.be.put(kind,ch.map(([id,j])=>Object.assign(JSON.parse(j),{_by:DEV})));ch.forEach(([id,j])=>map.set(id,j));}
-        const gone=[...map.keys()].filter(id=>!cur.has(id));
-        if(gone.length){await CLOUD.be.del(kind,gone);gone.forEach(id=>map.delete(id));}
-      }
-      const mj=syncMeta();
-      if(mj!==CLOUD.sm){await CLOUD.be.put('meta',[Object.assign(JSON.parse(mj),{id:'main',_by:DEV,updatedAt:Date.now()})]);CLOUD.sm=mj;}
-    }while(CLOUD.dirty);
-    CLOUD.state='on';CLOUD.last=Date.now();
-  }catch(e){CLOUD.state='err';CLOUD.dirty=false;setTimeout(()=>{if(CLOUD.on)flush();},5000);}
-  finally{CLOUD.busy=false;}
-}
-function syncLine(short){
-  if(CLOUD.state==='on')return `<div class="sync"><i class="on"></i>${short?'동기화 중':`${esc(CLOUD.email)} 계정으로 동기화 중${CLOUD.last?' · '+new Date(CLOUD.last).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):''}`}</div>`;
-  if(CLOUD.state==='err')return `<div class="sync"><i class="err"></i>${short?'동기화 멈춤':(CLOUD.msg||'동기화가 잠시 멈췄어요. 이 기기에는 저장돼요.')}</div>`;
-  if(CLOUD.state==='signedout')return `<div class="sync"><i></i>${short?'로그인 안 됨':'로그인하면 웹과 Mac이 같은 기도제목을 써요. 지금은 이 기기에만 저장돼요.'}</div>`;
-  return `<div class="sync"><i></i>이 기기에만 저장 중</div>`;
-}
-function syncSection(){
-  const c=supaCfg();
-  let h=`<section class="group"><h2>동기화</h2>${syncLine().replace('class="sync"','class="sync" style="padding:0"')}`;
-  if(CLOUD.state==='on') h+=`<div><button class="btn ghost" data-act="sign-out">로그아웃</button></div>`;
-  else if(c.url&&c.key) h+=`<form id="auth-form" class="field" style="gap:10px">
-      <label class="hint" for="auth-email">이메일</label><input id="auth-email" type="email" autocomplete="email" required style="height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
-      <label class="hint" for="auth-pw">비밀번호 (6자 이상)</label><input id="auth-pw" type="password" autocomplete="current-password" minlength="6" required style="height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
-      <div class="row-btns"><button class="btn" value="in">로그인</button><button class="btn ghost" value="up">처음이에요 · 가입</button></div></form>`;
-  h+=`<p class="hint">화면 모드와 글자 크기는 기기마다 따로 정해요.</p>`;
-  if(!SUPA_URL) h+=`<details><summary class="hint" style="cursor:pointer">서버 연결 정보</summary><div class="field" style="margin-top:8px">
-      <label class="hint" for="supa-url">Supabase 주소</label><input id="supa-url" type="url" value="${esc(db.settings.supaUrl||'')}" placeholder="https://xxxx.supabase.co" style="height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
-      <label class="hint" for="supa-key">anon 키</label><input id="supa-key" type="text" value="${esc(db.settings.supaKey||'')}" style="height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px">
-      <div><button class="btn ghost" data-act="supa-save">저장하고 연결</button></div></div></details>`;
-  return h+`</section>`;
-}
+function save(){saveLocal();}
 function purge(){
   const lim=Date.now()-db.settings.trashDays*DAY;
   const goneP=new Set(db.people.filter(p=>p.deletedAt&&p.deletedAt<lim).map(p=>p.id));
@@ -578,7 +447,7 @@ function vTrash(){
 function radios(name,opts,cur){return `<div class="seg" role="radiogroup">${opts.map(([v,l])=>`<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${String(cur)===String(v)?'checked':''}>${l}</label>`).join('')}</div>`;}
 function vPrefs(){
   const s=db.settings;
-  return `${syncSection()}<section class="group"><h2>화면</h2>
+  return `<section class="group"><h2>화면</h2>
     <div class="field"><span>화면 모드</span>${radios('theme',[['system','시스템'],['light','라이트'],['dark','다크']],s.theme)}</div>
     <div class="field"><span>글자 크기</span>${radios('font',[['xs','<span style="font-size:13px">가</span><span class="sr">아주 작게</span>'],['s','<span style="font-size:14px">가</span><span class="sr">작게</span>'],['m','<span style="font-size:16px">가</span><span class="sr">보통</span>'],['l','<span style="font-size:18px">가</span><span class="sr">크게</span>'],['xl','<span style="font-size:20px">가</span><span class="sr">아주 크게</span>']],s.font)}</div></section>
   <section class="group"><h2>목록</h2>
@@ -590,7 +459,7 @@ function vPrefs(){
   <section class="group"><h2>휴지통</h2>
     <div class="field"><span>삭제한 항목 보관 기간</span>${radios('trashDays',[[7,'7일'],[30,'30일'],[90,'90일']],s.trashDays)}</div></section>
   <section class="group"><h2>백업</h2>
-    <p class="hint">혹시 모를 때를 위해 가끔 백업해 두세요.</p>
+    <p class="hint">기도제목은 이 기기(이 브라우저, 이 앱)에만 저장돼요. 다른 기기로 옮길 때는 '백업 내용 복사'한 것을 그 기기의 '백업 불러오기'에 붙여넣으세요. 혹시 모를 때를 위해 가끔 백업해 두세요.</p>
     <div class="row-btns"><button class="btn ghost" data-act="backup-copy">백업 내용 복사</button><label class="btn ghost" style="display:inline-flex;align-items:center" for="backup-file">백업 파일 열기</label><input id="backup-file" type="file" accept=".json,.txt,application/json" class="sr"></div>
     <div class="field"><label for="backup-text" class="hint">또는 복사해 둔 백업 내용을 붙여넣으세요</label><textarea id="backup-text" placeholder='{"prayers":[...]}'></textarea>
     <div><button class="btn" data-act="backup-import">백업 불러오기</button></div></div></section>
@@ -644,7 +513,7 @@ function sheet(html,onSubmit){
 function navItems(){
   const cur=S.view==='person'?'intercession':S.view;
   const it=(v,l,c)=>`<button data-go="${v}" ${cur===v?'aria-current="page"':''}>${l}${c!=null?`<small>${c}</small>`:''}</button>`;
-  return `${it('personal','개인 기도',personalActive().length)}${it('intercession','중보기도',alivePeople().length+'명')}<hr>${it('archive','응답 보관함',archive().length)}${it('history','개인 기도의 역사',personalHist().length)}${it('trash','휴지통',trashed().length)}<hr>${it('prefs','설정')}<div style="margin-top:auto">${syncLine(true)}</div>`;
+  return `${it('personal','개인 기도',personalActive().length)}${it('intercession','중보기도',alivePeople().length+'명')}<hr>${it('archive','응답 보관함',archive().length)}${it('history','개인 기도의 역사',personalHist().length)}${it('trash','휴지통',trashed().length)}<hr>${it('prefs','설정')}`;
 }
 const isDesk=()=>matchMedia('(min-width:1000px)').matches;
 const DETAIL_VIEWS=['personal','intercession','person','archive','history'];
@@ -892,8 +761,6 @@ document.addEventListener('click',e=>{
     case 'new-person-q':newPersonSheet((S.pq||'').trim());break;
     case 'note':closeRow();noteSheet(id);break;
     case 'note-del':{const p=P(id);closeAll();delete p.note;commit();toast('코멘트를 지웠어요');break;}
-    case 'sign-out':CLOUD.sb&&CLOUD.sb.auth.signOut();break;
-    case 'supa-save':{db.settings.supaUrl=$('#supa-url').value.trim();db.settings.supaKey=$('#supa-key').value.trim();saveLocal();stopCloud();cloudInit();toast('연결 정보를 저장했어요');break;}
     case 'hist-edit':histSheet(b.dataset.id);break;
     case 'ed-del':b.closest('[data-ei],[data-si]').remove();break;
     case 'hist-restore':{closeAll();const p=P(id);p.deletedAt=null;p.gone=false;p.delLogged=false;commit();toast('기도 중으로 복귀했어요');break;}
@@ -958,14 +825,7 @@ document.addEventListener('change',e=>{
     if(t.name==='trashDays')purge();save();
   }
 });
-document.addEventListener('submit',async e=>{
-  if(e.target.id==='auth-form'){e.preventDefault();
-    const em=$('#auth-email').value.trim(),pw=$('#auth-pw').value,up=e.submitter&&e.submitter.value==='up';
-    if(!CLOUD.sb)return;
-    const r=up?await CLOUD.sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.href.split('#')[0].startsWith('http')?location.href.split('#')[0]:undefined}}):await CLOUD.sb.auth.signInWithPassword({email:em,password:pw});
-    if(r.error){toast(/Invalid login/i.test(r.error.message)?'이메일이나 비밀번호가 맞지 않아요':/registered/i.test(r.error.message)?'이미 가입된 이메일이에요. 로그인해 주세요':/confirm/i.test(r.error.message)?'메일함의 확인 링크를 먼저 눌러 주세요':'로그인하지 못했어요: '+r.error.message);return;}
-    if(up&&!r.data.session){toast('확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요');return;}
-    toast('로그인했어요');return;}
+document.addEventListener('submit',e=>{
   if(e.target.id==='person-add'){e.preventDefault();const i=$('#person-add-input');const v=i.value;S.ptab='active';addPrayer(v,S.pid);const n=$('#person-add-input');n&&n.focus();toast('등록했어요');}
 });
 
@@ -983,7 +843,7 @@ document.addEventListener('keydown',e=>{
     if(vis.length===1)go('person',vis[0].dataset.pid);else if(!vis.length&&S.pq.trim())newPersonSheet(S.pq.trim());}
   if(e.target.id==='person-add-input'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();e.target.form.requestSubmit();}
 });
-load();applyPrefs();parseHash();render();cloudInit();
+load();applyPrefs();parseHash();render();
 })();
 </script>
 </body></html>
